@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Money.Data.Sqlite/Money.Data.Sqlite.csproj" />
+    <Project Path="src/Money.Data/Money.Data.csproj" />
+    <Project Path="src/Money.Desktop/Money.Desktop.csproj" />
+    <Project Path="src/Money.Domain/Money.Domain.csproj" />
+    <Project Path="src/Money.Services/Money.Services.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Money.Data.Tests/Money.Data.Tests.csproj" />
+    <Project Path="tests/Money.Domain.Tests/Money.Domain.Tests.csproj" />
+    <Project Path="tests/Money.Services.Tests/Money.Services.Tests.csproj" />
+  </Folder>
+</Solution>

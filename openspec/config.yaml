@@ -1,0 +1,46 @@
+schema: spec-driven
+
+context: |
+  Aplicativo desktop pessoal de gestão financeira (referência funcional: Money 99). Uso individual, não comercial.
+  Stack: C#, .NET 10, WPF + WPF-UI, MVVM (CommunityToolkit.Mvvm), EF Core.
+  Arquitetura em camadas, um único executável: Money.Domain <- Money.Services <- Money.Data <- Money.Desktop.
+  Domain não referencia projetos. Services define as interfaces de repositório e depende só de Domain.
+  Data implementa a persistência sem conhecer o provedor. Desktop é o composition root.
+  Cada projeto expõe uma extensão AddMoney* para registro na injeção de dependência.
+  O provedor de banco fica em projeto próprio (Money.Data.Sqlite, com as migrations).
+  Trocar para SQL Server = criar Money.Data.SqlServer com o mesmo padrão e escolher o provedor em Money.Desktop.
+  Services não conhece UI, usa métodos assíncronos com CancellationToken e devolve DTOs, nunca entidades.
+  Nenhum tipo de interface (WPF, diálogos, caminhos de arquivo) em Domain, Services ou Data: pode haver interface web no futuro.
+  Valores monetários em decimal. Usar TimeProvider, nunca DateTime.Now.
+  Organizar pastas internas por módulo funcional, não por tipo técnico.
+
+# Project context (optional)
+# Add only constraints that should guide OpenSpec artifacts and workflows.
+# Include constraints an agent cannot infer by reading the code.
+# Keep general project documentation and discoverable codebase facts out.
+# Example:
+#   context: |
+#     Designs and tasks must cover Windows, macOS, and Linux
+#     Write all artifacts in Spanish
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
