@@ -1,10 +1,10 @@
-using Money.Domain.Common;
+using Money.Domain.Comum;
 
 namespace Money.Domain.Tests;
 
-public class EntityTests
+public class EntidadeTestes
 {
-    private sealed class EntidadeFake : Entity;
+    private sealed class EntidadeFake : Entidade;
 
     [Fact]
     public void NovaEntidade_TemIdUnicoEPreenchido()

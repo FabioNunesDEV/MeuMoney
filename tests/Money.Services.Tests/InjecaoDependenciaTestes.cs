@@ -2,14 +2,14 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Money.Services.Tests;
 
-public class DependencyInjectionTests
+public class InjecaoDependenciaTestes
 {
     [Fact]
     public void AddMoneyServices_ConstroiProviderValidandoEscopos()
     {
-        var services = new ServiceCollection().AddMoneyServices();
+        var servicos = new ServiceCollection().AddMoneyServices();
 
-        using var provider = services.BuildServiceProvider(new ServiceProviderOptions
+        using var provider = servicos.BuildServiceProvider(new ServiceProviderOptions
         {
             ValidateScopes = true,
             ValidateOnBuild = true,
