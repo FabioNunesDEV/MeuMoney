@@ -429,3 +429,8 @@ FodyWeavers.xsd
 
 # Prints de referencia (Money 99), nao versionar
 imagens_tela/
+
+# Bancos SQLite locais (inclui o meumoney.design.db das ferramentas do EF)
+*.db
+*.db-shm
+*.db-wal
