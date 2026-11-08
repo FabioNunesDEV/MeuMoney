@@ -1,8 +1,8 @@
-<ui:FluentWindow x:Class="Money.Desktop.MainWindow"
+<ui:FluentWindow x:Class="Money.Desktop.JanelaPrincipal"
                  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-                 Title="{Binding Title}"
+                 Title="{Binding Titulo}"
                  Width="1100" Height="700"
                  MinWidth="720" MinHeight="480"
                  ExtendsContentIntoTitleBar="True"
@@ -14,12 +14,12 @@
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
 
-    <ui:TitleBar Grid.Row="0" Title="{Binding Title}" />
+    <ui:TitleBar Grid.Row="0" Title="{Binding Titulo}" />
 
-    <TextBlock Grid.Row="1"
-               Text="{Binding Title}"
-               FontSize="28"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center" />
+    <ui:TextBlock Grid.Row="1"
+                  Text="{Binding Titulo}"
+                  FontTypography="Title"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center" />
   </Grid>
 </ui:FluentWindow>

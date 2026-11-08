@@ -5,14 +5,16 @@ using Microsoft.Extensions.Hosting;
 using Money.Data.Sqlite;
 using Money.Desktop.ViewModels;
 using Money.Services;
-using Money.Services.Abstractions;
+using Money.Services.Abstracoes;
 
 namespace Money.Desktop;
 
+/// <summary>Composition root: monta o host, prepara o banco e abre a janela principal.</summary>
 public partial class App : Application
 {
     private IHost? _host;
 
+    /// <inheritdoc />
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
@@ -21,24 +23,24 @@ public partial class App : Application
         {
             _host = Host.CreateDefaultBuilder()
                 .UseContentRoot(AppContext.BaseDirectory)
-                .ConfigureServices((context, services) =>
+                .ConfigureServices((contexto, servicos) =>
                 {
-                    services.AddMoneyServices();
-                    AddDatabase(services, context.Configuration);
+                    servicos.AddMoneyServices();
+                    AdicionarBanco(servicos, contexto.Configuration);
 
-                    services.AddSingleton<MainViewModel>();
-                    services.AddSingleton<MainWindow>();
+                    servicos.AddSingleton<JanelaPrincipalViewModel>();
+                    servicos.AddSingleton<JanelaPrincipal>();
                 })
                 .Build();
 
             await _host.StartAsync();
 
-            using (var scope = _host.Services.CreateScope())
+            using (var escopo = _host.Services.CreateScope())
             {
-                await scope.ServiceProvider.GetRequiredService<IDatabaseInitializer>().InitializeAsync();
+                await escopo.ServiceProvider.GetRequiredService<IInicializadorBanco>().InicializarAsync();
             }
 
-            _host.Services.GetRequiredService<MainWindow>().Show();
+            _host.Services.GetRequiredService<JanelaPrincipal>().Show();
         }
         catch (Exception ex)
         {
@@ -47,6 +49,7 @@ public partial class App : Application
         }
     }
 
+    /// <inheritdoc />
     protected override async void OnExit(ExitEventArgs e)
     {
         if (_host is not null)
@@ -58,20 +61,24 @@ public partial class App : Application
         base.OnExit(e);
     }
 
-    // Único ponto que escolhe o provedor de banco. Para usar SQL Server, referenciar
-    // Money.Data.SqlServer e adicionar o caso correspondente aqui.
-    private static void AddDatabase(IServiceCollection services, IConfiguration configuration)
+    /// <summary>
+    /// Único ponto que escolhe o provedor de banco. Para usar SQL Server, referenciar
+    /// Money.Data.SqlServer e adicionar o caso correspondente aqui.
+    /// </summary>
+    /// <param name="servicos">Coleção de serviços do host.</param>
+    /// <param name="configuracao">Configuração lida do appsettings.json (seção Database).</param>
+    private static void AdicionarBanco(IServiceCollection servicos, IConfiguration configuracao)
     {
-        var provider = configuration["Database:Provider"];
-        var connectionString = configuration["Database:ConnectionString"] ?? string.Empty;
+        var provedor = configuracao["Database:Provider"];
+        var stringConexao = configuracao["Database:ConnectionString"] ?? string.Empty;
 
-        switch (provider)
+        switch (provedor)
         {
             case "Sqlite":
-                services.AddMoneySqlite(connectionString);
+                servicos.AddMoneySqlite(stringConexao);
                 break;
             default:
-                throw new InvalidOperationException($"Provedor de banco não suportado: '{provider}'.");
+                throw new InvalidOperationException($"Provedor de banco não suportado: '{provedor}'.");
         }
     }
 }

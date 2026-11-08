@@ -13,6 +13,10 @@ context: |
   Nenhum tipo de interface (WPF, diálogos, caminhos de arquivo) em Domain, Services ou Data: pode haver interface web no futuro.
   Valores monetários em decimal. Usar TimeProvider, nunca DateTime.Now.
   Organizar pastas internas por módulo funcional, não por tipo técnico.
+  Identificadores em português, sem acento (Conta, Lancamento, ObterPorIdAsync); normas completas no CLAUDE.md.
+  Artefatos do OpenSpec em pt-BR.
+  Money 99 é referência só funcional (prints em imagens_tela/<Modulo>/, com dados reais: não copiar valores).
+  Visual segue o Fluent Design do Windows 11 com WPF-UI; regras na seção "Interface visual" do CLAUDE.md.
 
 # Project context (optional)
 # Add only constraints that should guide OpenSpec artifacts and workflows.
