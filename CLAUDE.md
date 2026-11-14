@@ -41,12 +41,15 @@ A saída do SDK vem em português nesta máquina: decidir por código de saída,
 
 `Microsoft.EntityFrameworkCore` (+ `.Relational`, `.Sqlite`, `.Design`),
 `Microsoft.Extensions.DependencyInjection` (+ `.Abstractions`), `Microsoft.Extensions.Hosting`,
-`WPF-UI`, `CommunityToolkit.Mvvm`, `xunit`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk`.
+`WPF-UI`, `CommunityToolkit.Mvvm`, `xunit`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk`,
+`StyleCop.Analyzers`, `Serilog` (+ `.Extensions.Hosting`, `.Sinks.File`).
+
+JSON com o `System.Text.Json` do próprio .NET; não usar `Newtonsoft.Json`.
 
 **Pacote fora desta lista: explicar o motivo, o que ele fará e o custo, e esperar autorização.**
 Aprovado, entra nesta lista e no `Directory.Packages.props` (versão nunca no `.csproj`).
 Ainda sem decisão, a resolver no módulo que precisar: asserções/mocks de teste, validação de
-entrada, gráficos e relatórios, importação de extrato (OFX/CSV), log em arquivo.
+entrada, gráficos e relatórios, importação de extrato (OFX/CSV).
 
 ## Arquitetura
 
@@ -97,13 +100,26 @@ Camadas num único executável. A dependência aponta sempre para dentro:
   `Fake`), nomes impostos pelo framework (`App`, `OnStartup`, `Dispose`, `CreateDbContext`), o
   parâmetro `cancellationToken`, os nomes de projeto e as extensões `AddMoney*`.
 - PascalCase para tipos, métodos, propriedades e constantes; camelCase para locais e parâmetros;
-  `_camelCase` para campos privados (é o que o `[ObservableProperty]` espera).
+  camelCase **sem sublinhado** para campos privados, acessados com `this.` (o `[ObservableProperty]`
+  aceita `private string titulo` e gera `Titulo`).
 - Interfaces com `I`; métodos assíncronos com sufixo `Async`.
 - Sufixos por papel: `ContaServico`, `IContaRepositorio`/`ContaRepositorio`, `ContaDto`,
   `ContaConfiguracao` (mapeamento EF), `ContasViewModel`.
 
 ### Estilo
 
+- **StyleCop.Analyzers** vale em todos os projetos (`Directory.Build.props`), com as regras padrão e a
+  configuração em `stylecop.json`. Em conflito com este documento, **o StyleCop vence** e o documento
+  se corrige. Pontos que mais aparecem:
+  - cabeçalho no topo de todo `.cs`:
+    ```csharp
+    // <copyright file="Conta.cs" company="Fábio Nunes">
+    // Copyright (c) 2026 Fábio Nunes. Licenciado sob a licença MIT.
+    // </copyright>
+    ```
+  - `this.` em toda chamada a membro de instância (SA1101);
+  - ordem dos membros: campos, construtores, propriedades, métodos; por acesso, público primeiro;
+    tipo aninhado por último (SA1201, SA1202).
 - Namespace por arquivo (`namespace X;`), `using` fora do namespace, `System` primeiro.
 - Chaves sempre, mesmo em `if` de uma linha. Indentação de 4 espaços (2 em XAML, JSON e `.csproj`).
 - Um tipo público por arquivo, com o nome do arquivo igual ao do tipo.
@@ -113,11 +129,21 @@ Camadas num único executável. A dependência aponta sempre para dentro:
 
 ### Comentários
 
-- Toda classe e interface: `/// <summary>` curto dizendo para que serve.
-- Todo método: `<summary>`, `<param>` para cada argumento e `<returns>` quando retorna valor.
+- Todo tipo e membro, inclusive de teste: `/// <summary>` curto dizendo para que serve.
+  Construtor primário: `<param>` no `<summary>` da classe.
+- Todo método: `<summary>`, `<param>` para cada argumento e `<returns>` quando retorna valor
+  (inclusive `Task`).
   Em implementação de interface ou override, `/// <inheritdoc />`.
 - Dentro do método, comentar só o **porquê** que não é evidente, no mínimo de palavras.
-- Classes de teste dispensam `<summary>`: o nome do teste é a documentação.
+- Textos padrão em pt-BR (`documentationCulture`): construtor começa com
+  `Inicia uma nova instância da classe <see cref="X"/>`; propriedade com `Obtém` ou `Obtém ou define`.
+
+### Log
+
+- **Serilog** grava só **falhas**, só em **arquivo texto** (`Serilog.Sinks.File`): nível mínimo `Error`,
+  valendo também para o que o framework registra (Host, EF Core). Nada de console ou outro destino.
+- No código, log só com `LogError` ou `LogCritical`, levando a exceção. Notificação de rotina
+  (`LogInformation`, `LogDebug`, `LogTrace`, `LogWarning`) não se registra.
 
 ### Regras de domínio
 

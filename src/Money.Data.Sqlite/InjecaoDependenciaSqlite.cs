@@ -1,3 +1,7 @@
+// <copyright file="InjecaoDependenciaSqlite.cs" company="Fábio Nunes">
+// Copyright (c) 2026 Fábio Nunes. Licenciado sob a licença MIT.
+// </copyright>
+
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;

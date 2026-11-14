@@ -1,3 +1,7 @@
+// <copyright file="IUnidadeDeTrabalho.cs" company="Fábio Nunes">
+// Copyright (c) 2026 Fábio Nunes. Licenciado sob a licença MIT.
+// </copyright>
+
 namespace Money.Services.Abstracoes;
 
 /// <summary>Confirma as alterações pendentes na persistência, sem expor o provedor de banco.</summary>
