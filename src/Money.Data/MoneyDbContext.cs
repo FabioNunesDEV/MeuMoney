@@ -1,14 +1,19 @@
+// <copyright file="MoneyDbContext.cs" company="Fábio Nunes">
+// Copyright (c) 2026 Fábio Nunes. Licenciado sob a licença MIT.
+// </copyright>
+
 using Microsoft.EntityFrameworkCore;
 using Money.Services.Abstracoes;
 
 namespace Money.Data;
 
 /// <summary>Contexto do EF Core do aplicativo. Também é a unidade de trabalho usada pelos serviços.</summary>
+/// <param name="options">Opções do contexto, com o provedor de banco já configurado.</param>
 public class MoneyDbContext(DbContextOptions<MoneyDbContext> options) : DbContext(options), IUnidadeDeTrabalho
 {
     /// <inheritdoc />
     public Task<int> SalvarAlteracoesAsync(CancellationToken cancellationToken = default)
-        => SaveChangesAsync(cancellationToken);
+        => this.SaveChangesAsync(cancellationToken);
 
     /// <inheritdoc />
     protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -1,3 +1,7 @@
+// <copyright file="App.xaml.cs" company="Fábio Nunes">
+// Copyright (c) 2026 Fábio Nunes. Licenciado sob a licença MIT.
+// </copyright>
+
 using System.Windows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +16,7 @@ namespace Money.Desktop;
 /// <summary>Composition root: monta o host, prepara o banco e abre a janela principal.</summary>
 public partial class App : Application
 {
-    private IHost? _host;
+    private IHost? host;
 
     /// <inheritdoc />
     protected override async void OnStartup(StartupEventArgs e)
@@ -21,7 +25,7 @@ public partial class App : Application
 
         try
         {
-            _host = Host.CreateDefaultBuilder()
+            this.host = Host.CreateDefaultBuilder()
                 .UseContentRoot(AppContext.BaseDirectory)
                 .ConfigureServices((contexto, servicos) =>
                 {
@@ -33,29 +37,29 @@ public partial class App : Application
                 })
                 .Build();
 
-            await _host.StartAsync();
+            await this.host.StartAsync();
 
-            using (var escopo = _host.Services.CreateScope())
+            using (var escopo = this.host.Services.CreateScope())
             {
                 await escopo.ServiceProvider.GetRequiredService<IInicializadorBanco>().InicializarAsync();
             }
 
-            _host.Services.GetRequiredService<JanelaPrincipal>().Show();
+            this.host.Services.GetRequiredService<JanelaPrincipal>().Show();
         }
         catch (Exception ex)
         {
             MessageBox.Show(ex.Message, "Meu Money", MessageBoxButton.OK, MessageBoxImage.Error);
-            Shutdown(1);
+            this.Shutdown(1);
         }
     }
 
     /// <inheritdoc />
     protected override async void OnExit(ExitEventArgs e)
     {
-        if (_host is not null)
+        if (this.host is not null)
         {
-            await _host.StopAsync();
-            _host.Dispose();
+            await this.host.StopAsync();
+            this.host.Dispose();
         }
 
         base.OnExit(e);

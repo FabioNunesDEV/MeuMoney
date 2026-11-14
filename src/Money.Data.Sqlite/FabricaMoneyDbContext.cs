@@ -1,3 +1,7 @@
+// <copyright file="FabricaMoneyDbContext.cs" company="Fábio Nunes">
+// Copyright (c) 2026 Fábio Nunes. Licenciado sob a licença MIT.
+// </copyright>
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Money.Data;

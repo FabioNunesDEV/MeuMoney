@@ -1,3 +1,7 @@
+// <copyright file="JanelaPrincipalViewModel.cs" company="Fábio Nunes">
+// Copyright (c) 2026 Fábio Nunes. Licenciado sob a licença MIT.
+// </copyright>
+
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace Money.Desktop.ViewModels;
@@ -6,5 +10,5 @@ namespace Money.Desktop.ViewModels;
 public partial class JanelaPrincipalViewModel : ObservableObject
 {
     [ObservableProperty]
-    private string _titulo = "Meu Money";
+    private string titulo = "Meu Money";
 }
