@@ -3,18 +3,21 @@
 // </copyright>
 
 using Microsoft.Extensions.DependencyInjection;
+using Money.Services.Contas;
 
 namespace Money.Services;
 
 /// <summary>Registro dos serviços da aplicação na injeção de dependência.</summary>
 public static class InjecaoDependencia
 {
-    /// <summary>Registra os serviços de cada módulo.</summary>
+    /// <summary>Registra os serviços de cada módulo, com o mesmo escopo da persistência.</summary>
     /// <param name="servicos">Coleção de serviços do host.</param>
     /// <returns>A mesma coleção, para encadear registros.</returns>
     public static IServiceCollection AddMoneyServices(this IServiceCollection servicos)
     {
-        // Registrar aqui os serviços de cada módulo.
+        servicos.AddScoped<ContaServico>();
+        servicos.AddScoped<InstituicaoFinanceiraServico>();
+        servicos.AddScoped<GrupoContaServico>();
         return servicos;
     }
 }

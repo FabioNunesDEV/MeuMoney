@@ -4,6 +4,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Money.Data.Comum;
 using Money.Services.Abstracoes;
 
 namespace Money.Data;
@@ -25,6 +26,7 @@ public static class InjecaoDependencia
         servicos.AddDbContext<MoneyDbContext>(configurarProvedor);
         servicos.AddScoped<IUnidadeDeTrabalho>(sp => sp.GetRequiredService<MoneyDbContext>());
         servicos.AddScoped<IInicializadorBanco, InicializadorBanco>();
+        servicos.AddScoped(typeof(IRepositorio<>), typeof(Repositorio<>));
         return servicos;
     }
 }

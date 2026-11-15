@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/*
+  Paleta, na organização do Money 99: barras em azul-petróleo escuro com texto claro (módulos, título
+  da página, painel de tarefas, faixas de seção) e conteúdo em superfície clara e neutra. O âmbar é o
+  complementar do azul-petróleo e marca só a ação principal e o módulo atual. As cores de tipo de
+  conta são dessaturadas. Verde e vermelho ficam reservados para valores.
+*/
+:root {
+  color-scheme: light;
+  --fundo: #f4f6f8;
+  --painel: #ffffff;
+  --borda: #e1e5ea;
+  --texto: #1c2430;
+  --suave: #586273;
+  --fraco: #8a93a2;
+  --realce: #0e7490;
+  --realce-fundo: #e3f2f6;
+  --positivo: #197a45;
+  --negativo: #b4232c;
+  --barra: #0c2f39;
+  --faixa: #14505e;
+  --lateral: #103a45;
+  --secao: #1d6373;
+  --sobre-barra: #eaf4f6;
+  --sobre-barra-suave: #a3c6ce;
+  --destaque: #f2b632;
+  --sobre-destaque: #2a1f00;
+  --tipo-corrente: #3b7fc4;
+  --tipo-poupanca: #2f9a76;
+  --tipo-dinheiro: #b98318;
+  --tipo-cartao: #c0546c;
+  --tipo-investimento: #7468c8;
+  --tipo-ativo: #2792a2;
+  --tipo-passivo: #c46f36;
+}
+
+/* O tema efetivo (claro ou escuro) é posto em data-tema por comum/tema.ts: escolha do usuário ou do Windows. */
+:root[data-tema='escuro'] {
+  color-scheme: dark;
+  --fundo: #12161c;
+  --painel: #1a1f27;
+  --borda: #2a313c;
+  --texto: #e6e9ef;
+  --suave: #a2aab8;
+  --fraco: #6d7685;
+  --realce: #55b9d2;
+  --realce-fundo: #17323b;
+  --positivo: #5cc98a;
+  --negativo: #f07c80;
+  --barra: #081d23;
+  --faixa: #0f3a45;
+  --lateral: #0b2a32;
+  --secao: #134754;
+  --tipo-corrente: #6ea6de;
+  --tipo-poupanca: #5cc09d;
+  --tipo-dinheiro: #d9a744;
+  --tipo-cartao: #e08a9d;
+  --tipo-investimento: #a59bea;
+  --tipo-ativo: #5bbccb;
+  --tipo-passivo: #e39a66;
+}
+
+@theme inline {
+  --color-fundo: var(--fundo);
+  --color-painel: var(--painel);
+  --color-borda: var(--borda);
+  --color-texto: var(--texto);
+  --color-suave: var(--suave);
+  --color-fraco: var(--fraco);
+  --color-realce: var(--realce);
+  --color-realce-fundo: var(--realce-fundo);
+  --color-positivo: var(--positivo);
+  --color-negativo: var(--negativo);
+  --color-barra: var(--barra);
+  --color-faixa: var(--faixa);
+  --color-lateral: var(--lateral);
+  --color-secao: var(--secao);
+  --color-sobre-barra: var(--sobre-barra);
+  --color-sobre-barra-suave: var(--sobre-barra-suave);
+  --color-destaque: var(--destaque);
+  --color-sobre-destaque: var(--sobre-destaque);
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+}
+
+html,
+body,
+#raiz {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--fundo);
+  color: var(--texto);
+  font-size: 13px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Foco visível só na navegação por teclado, com a cor de realce. */
+:focus-visible {
+  outline: 2px solid var(--realce);
+  outline-offset: 1px;
+}
+
+/* Selo do tipo de conta: fundo tingido e ícone na cor do tipo (a cor vem em --cor). */
+.selo-tipo {
+  background: color-mix(in srgb, var(--cor) 16%, transparent);
+  color: var(--cor);
+}

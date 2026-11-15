@@ -4,13 +4,14 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <PastaWeb>$(MSBuildThisFileDirectory)..\Money.Web\</PastaWeb>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="WPF-UI" />
-    <PackageReference Include="CommunityToolkit.Mvvm" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Web.WebView2" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Money.Api\Money.Api.csproj" />
     <ProjectReference Include="..\Money.Services\Money.Services.csproj" />
     <ProjectReference Include="..\Money.Data.Sqlite\Money.Data.Sqlite.csproj" />
   </ItemGroup>
@@ -18,5 +19,17 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <FontesWeb Include="$(PastaWeb)src\**;$(PastaWeb)index.html;$(PastaWeb)package.json;$(PastaWeb)vite.config.ts;$(PastaWeb)tsconfig.json" />
   </ItemGroup>
+  <!-- As telas (Money.Web) são compiladas pelo npm e copiadas para wwwroot, de onde o aplicativo as serve. -->
+  <Target Name="CompilarWeb" BeforeTargets="AssignTargetPaths" Inputs="@(FontesWeb)" Outputs="$(PastaWeb)dist\index.html">
+    <Exec Command="npm ci --no-fund --no-audit" WorkingDirectory="$(PastaWeb)" Condition="!Exists('$(PastaWeb)node_modules')" />
+    <Exec Command="npm run build" WorkingDirectory="$(PastaWeb)" />
+  </Target>
+  <Target Name="IncluirWeb" AfterTargets="CompilarWeb" BeforeTargets="AssignTargetPaths">
+    <ItemGroup>
+      <ArquivosWeb Include="$(PastaWeb)dist\**" />
+      <Content Include="@(ArquivosWeb)" TargetPath="wwwroot\%(ArquivosWeb.RecursiveDir)%(ArquivosWeb.Filename)%(ArquivosWeb.Extension)" CopyToOutputDirectory="PreserveNewest" />
+    </ItemGroup>
+  </Target>
 </Project>

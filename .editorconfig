@@ -15,3 +15,7 @@ csharp_style_namespace_declarations = file_scoped:suggestion
 csharp_using_directive_placement = outside_namespace:suggestion
 dotnet_sort_system_directives_first = true
 csharp_prefer_braces = true:suggestion
+
+# Migrations do EF são geradas pela ferramenta: fora da análise de estilo.
+[src/Money.Data.Sqlite/Migrations/*.cs]
+generated_code = true
