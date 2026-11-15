@@ -1,5 +1,5 @@
 ---
-description: Fecha a tarefa — confere o change do OpenSpec, compila, testa, commita, envia e abre o pull request.
+description: Fecha a tarefa — arquiva o change concluído do OpenSpec, compila, testa, commita, envia e abre o pull request.
 argument-hint: "[--sem-pr para preparar título e corpo sem abrir o PR]"
 allowed-tools: Read, Write, Edit, Grep, Glob, Bash
 ---
@@ -50,8 +50,9 @@ Com o change em mãos:
 - Leia `proposal.md` (o porquê e o título do PR) e `tasks.md`.
 - **Tarefas abertas (`- [ ]`) em `tasks.md`:** mostre quais são e pergunte se o PR sai assim
   mesmo. Não bloqueie, mas o corpo do PR lista o que ficou aberto.
-- **Change concluído e ainda ativo:** pergunte se quer arquivar antes do PR (`/opsx:archive`),
-  para que specs e arquivamento entrem no mesmo PR. A decisão é do dev; não arquive sozinho.
+- **Change concluído e ainda ativo (todas as tarefas marcadas):** arquive antes do commit, sem
+  perguntar, seguindo `/opsx:archive` com a sincronização das specs, para que specs e arquivamento
+  entrem no mesmo PR. Com tarefa aberta, não arquive: o PR sai com o change ativo.
 
 ## 3. Verificação
 

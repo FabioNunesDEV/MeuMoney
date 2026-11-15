@@ -434,3 +434,6 @@ imagens_tela/
 *.db
 *.db-shm
 *.db-wal
+
+# Capturas do navegador de teste (Playwright)
+.playwright-mcp/

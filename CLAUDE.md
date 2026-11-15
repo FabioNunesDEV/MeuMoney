@@ -1,7 +1,7 @@
 # MeuMoney
 
 Aplicativo desktop pessoal de gestão financeira, com o **Money 99** como referência funcional e o
-**Windows 11** como referência visual. Uso individual, não comercial, mantido por uma pessoa.
+visual próprio, moderno, feito com tecnologia web. Uso individual, não comercial, mantido por uma pessoa.
 
 Prints de referência do Money 99 ficam em `imagens_tela/<Modulo>/` (ex.: `imagens_tela/Contas/`),
 fora do git; em outra máquina a pasta precisa ser copiada à mão. **Os prints mostram dados
@@ -15,9 +15,10 @@ de exemplo ou mensagens de commit.
 | Linguagem | C# (`LangVersion latest`), `Nullable` e `ImplicitUsings` ativos |
 | Runtime | .NET 10 (`net10.0`; Desktop em `net10.0-windows`) |
 | SDK | 10.0.402, fixado no `global.json` (há SDK 11 RC na máquina; não usar) |
-| Interface | WPF + **WPF-UI 4.3** (Fluent, `FluentWindow`, fundo Mica, tema do Windows) |
-| Padrão de UI | MVVM com **CommunityToolkit.Mvvm 8.4** (`[ObservableProperty]`, `[RelayCommand]`) |
-| Infraestrutura | Generic Host (`Microsoft.Extensions.Hosting`) e injeção de dependência |
+| Telas | **React 19 + TypeScript**, Vite, **Tailwind CSS 4**, Radix UI (pop-ups e menus), ícones Lucide, avisos com Sonner. Projeto `src/Money.Web` |
+| Janela | WPF só como casca: uma janela com **WebView2** mostrando as telas |
+| API local | **ASP.NET Core** (minimal API) dentro do mesmo processo, em `127.0.0.1` com porta livre; serve a API e as telas compiladas |
+| Ferramentas web | Node 24 e npm; o `dotnet build` chama `npm run build` sozinho |
 | Persistência | **EF Core 10**, sem amarrar a um provedor |
 | Banco | **SQLite**, em `%LOCALAPPDATA%\MeuMoney\meumoney.db` |
 | Testes | **xUnit 2.9** |
@@ -31,6 +32,8 @@ de exemplo ou mensagens de commit.
 dotnet build MeuMoney.slnx
 dotnet test MeuMoney.slnx
 dotnet run --project src/Money.Desktop
+npm run build --prefix src/Money.Web      # verifica tipos (tsc) e compila as telas
+npm run dev --prefix src/Money.Web        # telas com recarga; abrir o aplicativo com Porta=5199
 dotnet ef migrations add <Nome> --project src/Money.Data.Sqlite --startup-project src/Money.Data.Sqlite
 openspec list
 ```
@@ -40,21 +43,26 @@ A saída do SDK vem em português nesta máquina: decidir por código de saída,
 ### Pacotes aprovados
 
 `Microsoft.EntityFrameworkCore` (+ `.Relational`, `.Sqlite`, `.Design`),
-`Microsoft.Extensions.DependencyInjection` (+ `.Abstractions`), `Microsoft.Extensions.Hosting`,
-`WPF-UI`, `CommunityToolkit.Mvvm`, `xunit`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk`,
+`Microsoft.Extensions.DependencyInjection` (+ `.Abstractions`), o framework `Microsoft.AspNetCore.App`,
+`Microsoft.Web.WebView2`, `xunit`, `xunit.runner.visualstudio`, `Microsoft.NET.Test.Sdk`,
 `StyleCop.Analyzers`, `Serilog` (+ `.Extensions.Hosting`, `.Sinks.File`).
+
+Pacotes npm aprovados (`src/Money.Web/package.json`): `react`, `react-dom`, `radix-ui`, `lucide-react`,
+`sonner`, `tailwindcss`, `@tailwindcss/vite`, `vite`, `@vitejs/plugin-react`, `typescript`,
+`@types/react`, `@types/react-dom`. Para gráficos, quando vierem, o previsto é `recharts`.
 
 JSON com o `System.Text.Json` do próprio .NET; não usar `Newtonsoft.Json`.
 
 **Pacote fora desta lista: explicar o motivo, o que ele fará e o custo, e esperar autorização.**
-Aprovado, entra nesta lista e no `Directory.Packages.props` (versão nunca no `.csproj`).
-Ainda sem decisão, a resolver no módulo que precisar: asserções/mocks de teste, validação de
-entrada, gráficos e relatórios, importação de extrato (OFX/CSV).
+Aprovado, entra nesta lista e no `Directory.Packages.props` (versão nunca no `.csproj`) ou no
+`package.json`. Ainda sem decisão, a resolver no módulo que precisar: asserções/mocks de teste,
+testes das telas, validação de entrada, importação de extrato (OFX/CSV).
 
 ## Arquitetura
 
 Camadas num único executável. A dependência aponta sempre para dentro:
-`Money.Domain ← Money.Services ← Money.Data ← Money.Desktop`.
+`Money.Domain ← Money.Services ← Money.Data / Money.Api ← Money.Desktop`. As telas (`Money.Web`) só
+falam com a API, por HTTP.
 
 | Projeto | Responsabilidade | Depende de |
 |---|---|---|
@@ -62,13 +70,17 @@ Camadas num único executável. A dependência aponta sempre para dentro:
 | `Money.Services` | Serviços por módulo, DTOs e as interfaces de repositório | Domain |
 | `Money.Data` | EF Core: `MoneyDbContext`, mapeamentos, repositórios. Não conhece provedor | Services, Domain |
 | `Money.Data.Sqlite` | Escolha do SQLite, migrations, fábrica de design-time | Data |
-| `Money.Desktop` | WPF, ViewModels, composition root, escolha do provedor (`appsettings.json`) | Services, Data.Sqlite |
+| `Money.Api` | Rotas HTTP `/api` por módulo; chama os serviços e devolve os DTOs. Regra violada vira 400 com `{ mensagem }` | Services |
+| `Money.Desktop` | Composition root: sobe o servidor local, escolhe o provedor (`appsettings.json`) e abre a janela com WebView2 | Api, Services, Data.Sqlite |
+| `Money.Web` | Telas em React; compiladas para `dist/` e copiadas para o `wwwroot` do Desktop | só a API |
 
-- Cada projeto expõe uma extensão `AddMoney*` (`AddMoneyServices`, `AddMoneyData`, `AddMoneySqlite`)
-  numa classe `InjecaoDependencia`.
+- Cada projeto expõe uma extensão `AddMoney*` (`AddMoneyServices`, `AddMoneyData`, `AddMoneySqlite`,
+  `AddMoneyApi` + `MapMoneyApi`) numa classe `InjecaoDependencia`.
+- A API não tem regra de negócio: cada rota é uma chamada a um serviço. Enum trafega como texto;
+  dinheiro trafega como número JSON e volta a `decimal` no C#.
 - Trocar para SQL Server = criar `Money.Data.SqlServer` no mesmo padrão e acrescentar o caso em
   `App.AdicionarBanco`. Nada mais muda.
-- **Nenhum tipo de interface** (WPF, diálogos, caminhos escolhidos pelo usuário) em Domain, Services
+- **Nenhum tipo de interface** (WPF, HTTP, diálogos, caminhos escolhidos pelo usuário) em Domain, Services
   ou Data: pode haver interface web no futuro.
 - Services não conhece UI, devolve **DTOs, nunca entidades**, e todo método assíncrono recebe
   `CancellationToken`.
@@ -96,21 +108,21 @@ Camadas num único executável. A dependência aponta sempre para dentro:
 
 - Identificadores **em português, sem acento nem cedilha**: `Conta`, `Lancamento`, `SaldoInicial`,
   `ObterPorIdAsync`. Acento só em comentário e texto exibido.
-- Ficam em inglês: termos técnicos consagrados (`DbContext`, `ViewModel`, `Dto`, `Id`, `Async`,
+- Ficam em inglês: termos técnicos consagrados (`DbContext`, `Endpoints`, `Dto`, `Id`, `Async`,
   `Fake`), nomes impostos pelo framework (`App`, `OnStartup`, `Dispose`, `CreateDbContext`), o
   parâmetro `cancellationToken`, os nomes de projeto e as extensões `AddMoney*`.
 - PascalCase para tipos, métodos, propriedades e constantes; camelCase para locais e parâmetros;
-  camelCase **sem sublinhado** para campos privados, acessados com `this.` (o `[ObservableProperty]`
-  aceita `private string titulo` e gera `Titulo`).
+  camelCase **sem sublinhado** para campos privados, acessados com `this.`.
 - Interfaces com `I`; métodos assíncronos com sufixo `Async`.
 - Sufixos por papel: `ContaServico`, `IContaRepositorio`/`ContaRepositorio`, `ContaDto`,
-  `ContaConfiguracao` (mapeamento EF), `ContasViewModel`.
+  `ContaConfiguracao` (mapeamento EF), `ContasEndpoints` (rotas da API).
 
 ### Estilo
 
 - **StyleCop.Analyzers** vale em todos os projetos (`Directory.Build.props`), com as regras padrão e a
   configuração em `stylecop.json`. Em conflito com este documento, **o StyleCop vence** e o documento
-  se corrige. Pontos que mais aparecem:
+  se corrige. As migrations ficam fora da análise (`generated_code` no `.editorconfig`). Pontos que
+  mais aparecem:
   - cabeçalho no topo de todo `.cs`:
     ```csharp
     // <copyright file="Conta.cs" company="Fábio Nunes">
@@ -151,72 +163,92 @@ Camadas num único executável. A dependência aponta sempre para dentro:
 - Data e hora sempre por **`TimeProvider`** injetado, nunca `DateTime.Now`, `DateTime.UtcNow` ou
   `DateTimeOffset.Now`. Data sem hora (vencimento, competência) em `DateOnly`.
 - Id das entidades: `Guid` v7, gerado na criação por `Entidade`.
+- **Conta nunca é excluída**, nem de vez nem logicamente: a única forma de tirá-la de uso é encerrar.
 - Entidade protege seu estado: setters privados, alteração por método com a regra
   (`conta.Renomear(nome)`), validação na própria entidade.
 
-### WPF e MVVM
+### Telas (Money.Web)
 
-- Code-behind só liga a janela ao ViewModel (`DataContext`, `InitializeComponent`). Lógica fica no
-  ViewModel; regra de negócio fica em Services.
-- Propriedades com `[ObservableProperty]`, ações com `[RelayCommand]` (async quando chamar serviço).
-- Usar os controles do WPF-UI antes de criar controle próprio: o pacote já resolve tema, ícones,
-  navegação e diálogos.
+- TypeScript estrito; o `npm run build` falha com erro de tipo. Nomes em português como no C#:
+  componentes e tipos em PascalCase (`ContaDialogo`), funções e variáveis em camelCase.
+- Pastas por módulo (`contas/`, `inicio/`) e `comum/` para o que é compartilhado: `ui.tsx` (botão,
+  campo, pop-up, menus, página, cartão), `formato.ts`, `tiposConta.tsx`, `useDados.ts`.
+- Todas as chamadas HTTP passam por `api.ts`, que espelha os DTOs. Tela não faz `fetch` direto.
+- Regra de negócio fica em Services. A tela só valida formato de digitação (ex.: valor em pt-BR) e
+  mostra a `mensagem` devolvida pela API.
+- Usar os componentes de `comum/ui.tsx` e as peças do Radix antes de criar componente novo.
+- Comentário `/** ... */` curto em componente e função exportados; dentro, só o porquê.
+- A janela WPF (`JanelaPrincipal`) só hospeda o WebView2: nada de lógica nem de tela em XAML.
 - Textos exibidos em português, com acento.
 
 ### Testes
 
 - Código novo de Domain e Services tem teste unitário. Persistência tem teste em `Money.Data.Tests`
-  com SQLite em arquivo temporário (ver `ProvedorSqliteTestes`).
+  com SQLite em arquivo temporário (ver `ProvedorSqliteTestes`). Rota nova da API tem teste em
+  `Money.Api.Tests`, de ponta a ponta (HTTP real em porta livre + SQLite temporário).
+- As telas ainda não têm teste automatizado: valem a verificação de tipos e a conferência por captura.
 - Nome do teste em português: `Metodo_Cenario_ResultadoEsperado`.
 - Teste nunca toca o banco real em `%LOCALAPPDATA%\MeuMoney`.
 
 ## Interface visual
 
-O Money 99 diz **o que** cada tela faz: campos, regras, fluxo, informação exibida. **Como** ela
-aparece segue o **Fluent Design do Windows 11**, no estilo dos apps nativos (Configurações,
-Microsoft Store, Fotos). O visual do Money 99 (faixas azuis, menus em texto, clip-art, botões
-cinza no rodapé, assistentes de várias janelas) é defasado e **não se reproduz**.
+O MeuMoney segue a **organização de tela do Money 99, com acabamento atual**. O Money 99 diz o que
+cada tela faz **e** como ela se arruma; o que muda é o acabamento: tipografia, espaçamento, ícones,
+temas claro e escuro. Os prints em `imagens_tela/` valem também como referência de layout.
+
+### Arranjo de toda tela
+
+| Parte | Como é |
+|---|---|
+| Barra de módulos (topo) | Faixa escura com Início, Contas, Contas a pagar, Investimentos, Planejador, Relatórios, Categorias. O módulo atual tem sublinhado âmbar; os que ainda não existem aparecem desativados. À direita, a troca de tema |
+| Faixa de título | Abaixo da barra, com o título da página e os comandos (`Botao` nas variantes `barra` e `destaque`); a ação principal é a âmbar |
+| Painel de tarefas (esquerda) | Escuro, com texto de ajuda, as tarefas da página e as visões (`BlocoPainel` + `Tarefa`). Some abaixo de 1000 de largura |
+| Barra de opções | Clara, logo abaixo do título: busca, agrupamento e opções de exibição |
+| Conteúdo | Superfície clara; blocos com **faixa de seção** colorida no topo (`Secao`), como as faixas do Money |
+| Barra de situação (rodapé) | Totais e saldos da página, à direita |
+
+Tudo isso é o componente `Pagina` de `comum/ui.tsx`; página nova não monta o arranjo à mão.
 
 ### Do Money 99 para o MeuMoney
 
 | No Money 99 | No MeuMoney |
 |---|---|
-| Menu Arquivo/Editar + barra de texto (Conteúdo, Contas, Contas a pagar...) | `NavigationView` lateral, recolhível, com ícone e texto por módulo; Configurações no rodapé |
-| Botão "Voltar" da barra | Histórico de navegação do `NavigationView` |
-| Home page com faixas de título azuis | Painel de cartões: patrimônio total, próximas contas a pagar, contas favoritas |
-| Gerenciador de contas com ícones grandes | Cartões agrupados por tipo (banco, cartão, investimento, patrimônio) com nome, instituição e saldo; total no topo |
-| Botões no rodapé (Nova conta, Excluir conta...) | Barra de comandos no topo da página; ação principal com `Appearance="Primary"`; ações do item também no menu de contexto |
-| Assistente com várias janelas Voltar/Avançar | Um `ContentDialog` ou página com formulário curto; campos opcionais em `CardExpander`. Passos só quando o fluxo exigir, com indicador de progresso |
-| Lista de tipos com texto explicativo ao lado | Opções em cartões ou `ComboBox` com a descrição embaixo de cada item |
-| Registro denso com abas Cheque/Depósito/Transferência | `DataGrid` limpo, valores à direita, saldo corrente; lançamento num painel lateral ou diálogo, com o tipo escolhido por botões segmentados |
-| Ilustrações clip-art | Nenhuma ilustração; ícones Fluent (`ui:SymbolIcon Symbol="..."`) |
+| Barra de texto (Conteúdo, Contas, Contas a pagar...) | A barra de módulos, igual na ordem |
+| Home page com faixas de título | Início com seções em faixa: contas favoritas (nome como link e saldo final), saldos, onde está o dinheiro |
+| Gerenciador de contas com ícones grandes | Ícones grandes por conta, agrupados em seções; a visão em lista é a alternativa; saldos no rodapé |
+| Clique na conta abre a conta | Duplo clique ou Enter abre a página da conta, com Movimentação, Detalhes e Histórico no painel |
+| Botões no rodapé (Nova conta...) | Comandos na faixa de título e no painel de tarefas; ações do item no menu de contexto e no botão "…" |
+| Assistente com várias janelas | Um pop-up com formulário curto |
+| Ilustrações clip-art | Nenhuma ilustração; ícones Lucide |
 | Dica do dia, Anúncios, Consultor financeiro, Leitura via Web | Não reproduzir |
 
 ### Regras
 
-- **Tema claro e escuro** acompanhando o Windows (`SystemThemeWatcher`), fundo Mica e cor de
-  destaque do sistema. Toda tela deve funcionar nos dois temas.
-- **Cor nunca fixa no XAML.** Usar os recursos do tema por `DynamicResource`:
-  `TextFillColorPrimaryBrush`, `TextFillColorSecondaryBrush`, `CardBackgroundFillColorDefaultBrush`,
-  `ControlStrokeColorDefaultBrush`, `AccentTextFillColorPrimaryBrush`.
-- **Valor positivo e negativo**: `SystemFillColorSuccessBrush` e `SystemFillColorCriticalBrush`,
-  sempre acompanhados do sinal ou de ícone (cor sozinha não basta).
-- **Tipografia** pelos estilos do WPF-UI: `ui:TextBlock FontTypography="..."` com `Display`,
-  `TitleLarge`, `Title`, `Subtitle`, `BodyStrong`, `Body` e `Caption`. Não definir `FontSize` nem
-  `FontFamily` à mão.
-- **Espaçamento em múltiplos de 4.** Margem da página 24, entre cartões 8 a 12, dentro do cartão 16.
-- Cantos, sombras e animações ficam como o WPF-UI entrega: não sobrescrever `CornerRadius` nem
-  criar estilo próprio de botão.
-- **Valores monetários** formatados em pt-BR (`R$ 1.234,56`, cultura `pt-BR`) e alinhados à direita.
-  Datas em `dd/MM/yyyy`.
-- **Estado vazio** com mensagem e ação ("Nenhuma conta cadastrada" + botão "Criar conta").
-- **Retorno ao usuário**: `Snackbar` para confirmar uma ação concluída, `ContentDialog` para
-  confirmar exclusão, `InfoBar` para aviso que fica na página. Nunca `MessageBox` do Windows, exceto
-  no erro fatal de inicialização.
-- **Teclado**: toda ação alcançável sem mouse, atalho para as frequentes (Ctrl+N para novo) e
-  `AutomationProperties.Name` em botão que só tem ícone.
-- A janela tem largura mínima de 720: abaixo de ~1000 o `NavigationView` recolhe e o conteúdo se
-  reorganiza, sem barra de rolagem horizontal.
+- **Cores vêm das variáveis de `src/Money.Web/src/estilo.css`**, nunca fixas no componente. Cada uma
+  tem valor para o tema claro e para o escuro; o usuário escolhe entre o tema do Windows, o claro e
+  o escuro (`comum/tema.ts`). Toda tela funciona nos dois.
+- **Paleta**: barras em azul-petróleo escuro com texto claro (`barra`, `faixa`, `lateral`, `secao`);
+  conteúdo em superfície clara e neutra (`fundo`, `painel`); **âmbar** (`destaque`), o complementar
+  do azul-petróleo, só na ação principal e no módulo atual; `realce` para links e seleção no
+  conteúdo; cores de tipo de conta dessaturadas (`--tipo-*`) nos selos. Vivo, sem cor gritante.
+- **Verde e vermelho só para valor**: saldo na cor normal do texto, saldo negativo em `negativo`,
+  sempre com o sinal (cor sozinha não basta); `positivo` fica para entradas e variações.
+- **Densidade do Money**: texto base de 13 px, linhas de tabela baixas, muita informação por tela.
+  Espaçamento em múltiplos de 4.
+- **Valores monetários** no padrão pt-BR com o símbolo da moeda (`R$ 1.234,56`, `US$ 320,10`),
+  alinhados à direita, com algarismos de largura fixa (`tabular-nums`). Datas em `dd/MM/yyyy`.
+- **Módulo ou visão que ainda não existe** aparece desativado, com a dica "Em breve"; nunca com
+  dado inventado.
+- **Estado vazio** com ícone, mensagem e ação ("Nenhuma conta cadastrada" + "Criar conta").
+- **Retorno ao usuário**: aviso passageiro (Sonner) para ação concluída ou recusada; pop-up de
+  confirmação (`Confirmacao`) para exclusão de cadastro; erro de formulário dentro do próprio pop-up
+  (`AvisoErro`). `MessageBox` do Windows só no erro fatal de inicialização.
+- **Teclado**: toda ação alcançável sem mouse; item de lista focável, Enter abre, tecla de menu abre
+  o menu de contexto; Ctrl+N para novo; botão só com ícone tem `aria-label`.
+- A janela tem largura mínima de 720, sem rolagem horizontal: o painel de tarefas some abaixo de
+  1000 e as barras quebram em linhas.
+- **Tela nova se confere por captura antes de entregar**: abrir o aplicativo com banco temporário
+  (`Database__ConnectionString` e `Porta=5199` no ambiente) e olhar a janela e as interações.
 
 ## Regras de trabalho para a IA
 
@@ -244,7 +276,8 @@ cinza no rodapé, assistentes de várias janelas) é defasado e **não se reprod
 
 ### Validação
 
-- Antes de dar uma tarefa por concluída: `dotnet build` sem avisos e `dotnet test` passando.
+- Antes de dar uma tarefa por concluída: `dotnet build` sem avisos (inclui a verificação de tipos e
+  a compilação das telas) e `dotnet test` passando.
 - Validação visual e de uso do aplicativo é do usuário: a IA entrega o build pronto, diz o que
   conferir e espera o retorno.
 
@@ -256,7 +289,8 @@ cinza no rodapé, assistentes de várias janelas) é defasado e **não se reprod
   do change.
 - **Commit, push e PR só com pedido.** Pedido dado, commit e push andam juntos; não terminar com
   commit só local.
-- Fechamento da tarefa: `/pull-request`. Um PR por vez contra a `main`, sem empilhar branches.
+- Fechamento da tarefa: `/pull-request`, que já arquiva o change concluído (com as specs), faz o
+  commit, o push e abre o PR, sem perguntar por cada etapa. Um PR por vez contra a `main`, sem empilhar branches.
   O merge é sempre do usuário.
 - Depois de abrir o PR, conferir `gh pr view <n> --json state` antes de qualquer push: se já foi
   mergeado, o push recria a branch apagada.

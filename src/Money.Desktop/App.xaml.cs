@@ -2,21 +2,27 @@
 // Copyright (c) 2026 Fábio Nunes. Licenciado sob a licença MIT.
 // </copyright>
 
+using System.IO;
 using System.Windows;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using Money.Api;
 using Money.Data.Sqlite;
-using Money.Desktop.ViewModels;
 using Money.Services;
 using Money.Services.Abstracoes;
 
 namespace Money.Desktop;
 
-/// <summary>Composition root: monta o host, prepara o banco e abre a janela principal.</summary>
+/// <summary>
+/// Composition root: sobe o servidor local (API e telas), prepara o banco e abre a janela.
+/// </summary>
 public partial class App : Application
 {
-    private IHost? host;
+    private WebApplication? servidor;
 
     /// <inheritdoc />
     protected override async void OnStartup(StartupEventArgs e)
@@ -25,26 +31,35 @@ public partial class App : Application
 
         try
         {
-            this.host = Host.CreateDefaultBuilder()
-                .UseContentRoot(AppContext.BaseDirectory)
-                .ConfigureServices((contexto, servicos) =>
-                {
-                    servicos.AddMoneyServices();
-                    AdicionarBanco(servicos, contexto.Configuration);
+            var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+            {
+                ContentRootPath = AppContext.BaseDirectory,
+                WebRootPath = Path.Combine(AppContext.BaseDirectory, "wwwroot"),
+            });
 
-                    servicos.AddSingleton<JanelaPrincipalViewModel>();
-                    servicos.AddSingleton<JanelaPrincipal>();
-                })
-                .Build();
+            // Só a própria máquina alcança o servidor; porta 0 pede uma porta livre ao sistema.
+            builder.WebHost.UseUrls($"http://127.0.0.1:{builder.Configuration.GetValue("Porta", 0)}");
+            builder.Services.AddMoneyServices();
+            AdicionarBanco(builder.Services, builder.Configuration);
+            builder.Services.AddMoneyApi();
 
-            await this.host.StartAsync();
+            this.servidor = builder.Build();
+            this.servidor.UseDefaultFiles();
+            this.servidor.UseStaticFiles();
+            this.servidor.MapMoneyApi();
 
-            using (var escopo = this.host.Services.CreateScope())
+            await using (var escopo = this.servidor.Services.CreateAsyncScope())
             {
                 await escopo.ServiceProvider.GetRequiredService<IInicializadorBanco>().InicializarAsync();
             }
 
-            this.host.Services.GetRequiredService<JanelaPrincipal>().Show();
+            await this.servidor.StartAsync();
+            var endereco = this.servidor.Services.GetRequiredService<IServer>()
+                .Features.Get<IServerAddressesFeature>()?.Addresses.FirstOrDefault()
+                ?? throw new InvalidOperationException("O servidor local não informou o endereço.");
+
+            this.MainWindow = new JanelaPrincipal(new Uri(endereco));
+            this.MainWindow.Show();
         }
         catch (Exception ex)
         {
@@ -56,10 +71,10 @@ public partial class App : Application
     /// <inheritdoc />
     protected override async void OnExit(ExitEventArgs e)
     {
-        if (this.host is not null)
+        if (this.servidor is not null)
         {
-            await this.host.StopAsync();
-            this.host.Dispose();
+            await this.servidor.StopAsync();
+            await this.servidor.DisposeAsync();
         }
 
         base.OnExit(e);
