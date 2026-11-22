@@ -218,7 +218,7 @@ Tudo isso é o componente `Pagina` de `comum/ui.tsx`; página nova não monta o 
 | Gerenciador de contas com ícones grandes | Ícones grandes por conta, agrupados em seções; a visão em lista é a alternativa; saldos no rodapé |
 | Clique na conta abre a conta | Duplo clique ou Enter abre a página da conta, com Movimentação, Detalhes e Histórico no painel |
 | Botões no rodapé (Nova conta...) | Comandos na faixa de título e no painel de tarefas; ações do item no menu de contexto e no botão "…" |
-| Assistente com várias janelas | Um pop-up com formulário curto |
+| Assistente com várias janelas | Um pop-up com passos curtos (Voltar, Avançar, Concluir) |
 | Ilustrações clip-art | Nenhuma ilustração; ícones Lucide |
 | Dica do dia, Anúncios, Consultor financeiro, Leitura via Web | Não reproduzir |
 
