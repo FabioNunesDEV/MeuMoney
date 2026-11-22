@@ -6,6 +6,7 @@ using Money.Domain.Comum;
 using Money.Domain.Contas;
 using Money.Services.Abstracoes;
 using Money.Services.Comum;
+using Money.Services.Lancamentos;
 
 namespace Money.Services.Contas;
 
@@ -13,11 +14,13 @@ namespace Money.Services.Contas;
 /// <param name="contas">Repositório de contas.</param>
 /// <param name="instituicoes">Repositório de instituições financeiras.</param>
 /// <param name="grupos">Repositório de grupos de contas.</param>
+/// <param name="lancamentos">Repositório de lançamentos, para o saldo e a trava da moeda.</param>
 /// <param name="unidadeDeTrabalho">Grava as alterações.</param>
 public sealed class ContaServico(
     IRepositorio<Conta> contas,
     IRepositorio<InstituicaoFinanceira> instituicoes,
     IRepositorio<GrupoConta> grupos,
+    ILancamentoRepositorio lancamentos,
     IUnidadeDeTrabalho unidadeDeTrabalho)
 {
     /// <summary>Lista os tipos de conta com nome e descrição.</summary>
@@ -51,7 +54,7 @@ public sealed class ContaServico(
             .GroupBy(c => c.CodigoMoeda)
             .OrderBy(g => g.Key == CatalogoMoedas.CodigoPadrao ? 0 : 1)
             .ThenBy(g => g.Key, StringComparer.Ordinal)
-            .Select(g => new TotalMoedaDto(ParaDto(CatalogoMoedas.Obter(g.Key)), g.Sum(c => c.SaldoInicial)))
+            .Select(g => new TotalMoedaDto(ParaDto(CatalogoMoedas.Obter(g.Key)), g.Sum(dados.Saldo)))
             .ToList();
         return new GerenciadorContasDto(lista, totais, dados.Contas.Count > 0);
     }
@@ -116,10 +119,16 @@ public sealed class ContaServico(
 
         Nomes.GarantirUnico(todas, dados.Nome, id, "uma conta");
         var investimento = todas.FirstOrDefault(c => c.ContaCaixaId == id);
-        if (investimento is not null && CatalogoMoedas.Obter(dados.CodigoMoeda).Codigo != conta.CodigoMoeda)
+        var trocaMoeda = CatalogoMoedas.Obter(dados.CodigoMoeda).Codigo != conta.CodigoMoeda;
+        if (investimento is not null && trocaMoeda)
         {
             throw new RegraNegocioException(
                 $"Esta conta é caixa do investimento '{investimento.Nome}'; desvincule antes de trocar a moeda.");
+        }
+
+        if (trocaMoeda && (await lancamentos.ListarDaContaAsync(id, cancellationToken)).Count > 0)
+        {
+            throw new RegraNegocioException("A moeda não muda depois do primeiro lançamento da conta.");
         }
 
         conta.Renomear(dados.Nome);
@@ -176,45 +185,25 @@ public sealed class ContaServico(
         await unidadeDeTrabalho.SalvarAlteracoesAsync(cancellationToken);
     }
 
+    /// <summary>Converte a moeda do catálogo no DTO.</summary>
+    /// <param name="moeda">Moeda do catálogo.</param>
+    /// <returns>O DTO da moeda.</returns>
+    internal static MoedaDto ParaDto(Moeda moeda)
+    {
+        return new MoedaDto(moeda.Codigo, moeda.Nome, moeda.Simbolo, moeda.CasasDecimais);
+    }
+
     private static Conta ObterDaLista(IEnumerable<Conta> todas, Guid id)
     {
         return todas.FirstOrDefault(c => c.Id == id)
             ?? throw new RegraNegocioException("Conta não encontrada.");
     }
 
-    private static MoedaDto ParaDto(Moeda moeda)
-    {
-        return new MoedaDto(moeda.Codigo, moeda.Nome, moeda.Simbolo, moeda.CasasDecimais);
-    }
-
-    private static async Task<Guid?> ResolverPorNomeAsync<T>(
-        IRepositorio<T> repositorio,
-        string? nome,
-        Func<string, T> criar,
-        CancellationToken cancellationToken)
-        where T : EntidadeNomeada
-    {
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            return null;
-        }
-
-        var existente = (await repositorio.ListarAsync(cancellationToken)).FirstOrDefault(e => Nomes.Iguais(e.Nome, nome));
-        if (existente is not null)
-        {
-            return existente.Id;
-        }
-
-        var novo = criar(nome);
-        repositorio.Adicionar(novo);
-        return novo.Id;
-    }
-
     private async Task AplicarCamposAsync(Conta conta, SalvarContaDto dados, CancellationToken cancellationToken)
     {
-        conta.DefinirInstituicao(await ResolverPorNomeAsync(
+        conta.DefinirInstituicao(await Nomes.ResolverPorNomeAsync(
             instituicoes, dados.NomeInstituicao, n => new InstituicaoFinanceira(n), cancellationToken));
-        conta.DefinirGrupo(await ResolverPorNomeAsync(
+        conta.DefinirGrupo(await Nomes.ResolverPorNomeAsync(
             grupos, dados.NomeGrupo, n => new GrupoConta(n), cancellationToken));
         conta.DefinirFavorita(dados.Favorita);
     }
@@ -261,18 +250,26 @@ public sealed class ContaServico(
         return new DadosContas(
             await contas.ListarAsync(cancellationToken),
             await instituicoes.ListarAsync(cancellationToken),
-            await grupos.ListarAsync(cancellationToken));
+            await grupos.ListarAsync(cancellationToken),
+            await lancamentos.SomarEfeitosPorContaAsync(cancellationToken));
     }
 
     /// <summary>Contas com os cadastros relacionados, para montar os DTOs sem consultas extras.</summary>
     /// <param name="Contas">Todas as contas.</param>
     /// <param name="Instituicoes">Todas as instituições.</param>
     /// <param name="Grupos">Todos os grupos.</param>
+    /// <param name="EfeitosLancamentos">Soma dos lançamentos de cada conta, por Id.</param>
     private sealed record DadosContas(
         IReadOnlyList<Conta> Contas,
         IReadOnlyList<InstituicaoFinanceira> Instituicoes,
-        IReadOnlyList<GrupoConta> Grupos)
+        IReadOnlyList<GrupoConta> Grupos,
+        IReadOnlyDictionary<Guid, decimal> EfeitosLancamentos)
     {
+        /// <summary>Saldo exibido: o saldo inicial mais os lançamentos não nulos.</summary>
+        /// <param name="conta">Conta.</param>
+        /// <returns>O saldo da conta.</returns>
+        public decimal Saldo(Conta conta) => conta.SaldoInicial + this.EfeitosLancamentos.GetValueOrDefault(conta.Id);
+
         /// <summary>Monta o DTO da conta com os nomes relacionados.</summary>
         /// <param name="conta">Conta a converter.</param>
         /// <returns>O DTO.</returns>
@@ -284,7 +281,7 @@ public sealed class ContaServico(
                 conta.Tipo,
                 TiposConta.Obter(conta.Tipo).Nome,
                 ContaServico.ParaDto(CatalogoMoedas.Obter(conta.CodigoMoeda)),
-                conta.SaldoInicial,
+                this.Saldo(conta),
                 conta.SaldoInformado,
                 conta.InstituicaoFinanceiraId,
                 this.Instituicoes.FirstOrDefault(i => i.Id == conta.InstituicaoFinanceiraId)?.Nome,

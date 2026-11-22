@@ -3,10 +3,11 @@
 // </copyright>
 
 using Money.Domain.Comum;
+using Money.Services.Abstracoes;
 
 namespace Money.Services.Comum;
 
-/// <summary>Comparação e unicidade de nomes de cadastro.</summary>
+/// <summary>Comparação, unicidade e criação pelo nome dos cadastros.</summary>
 internal static class Nomes
 {
     /// <summary>Compara dois nomes sem os espaços das pontas e sem diferenciar maiúsculas.</summary>
@@ -34,5 +35,41 @@ internal static class Nomes
         {
             throw new RegraNegocioException($"Já existe {descricao} com o nome '{nome.Trim()}'.");
         }
+    }
+
+    /// <summary>
+    /// Devolve o Id do cadastro com o nome informado, criando-o se ainda não existir. Nome vazio
+    /// significa "nenhum".
+    /// </summary>
+    /// <typeparam name="T">Tipo do cadastro.</typeparam>
+    /// <param name="repositorio">Repositório do cadastro.</param>
+    /// <param name="nome">Nome digitado pelo usuário.</param>
+    /// <param name="criar">Cria o cadastro novo a partir do nome.</param>
+    /// <param name="cancellationToken">Cancela a consulta.</param>
+    /// <param name="filtro">Restringe a busca (ex.: subcategorias de uma categoria); nulo busca em todos.</param>
+    /// <returns>O Id existente ou o do cadastro criado; nulo se o nome estiver vazio.</returns>
+    public static async Task<Guid?> ResolverPorNomeAsync<T>(
+        IRepositorio<T> repositorio,
+        string? nome,
+        Func<string, T> criar,
+        CancellationToken cancellationToken,
+        Func<T, bool>? filtro = null)
+        where T : EntidadeNomeada
+    {
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            return null;
+        }
+
+        var existente = (await repositorio.ListarAsync(cancellationToken))
+            .FirstOrDefault(e => (filtro is null || filtro(e)) && Iguais(e.Nome, nome));
+        if (existente is not null)
+        {
+            return existente.Id;
+        }
+
+        var novo = criar(nome);
+        repositorio.Adicionar(novo);
+        return novo.Id;
     }
 }

@@ -70,6 +70,65 @@ export interface SalvarConta {
   saldoCaixaNova: number;
 }
 
+export type TipoLancamento = 'Gasto' | 'Recebimento' | 'TransferenciaSaida' | 'TransferenciaEntrada';
+export type SituacaoLancamento = 'NaoReconciliado' | 'Compensado' | 'Reconciliado' | 'Nulo';
+export type NaturezaLancamento = 'Gasto' | 'Recebimento' | 'Transferencia';
+
+export interface Lancamento {
+  id: string;
+  contaId: string;
+  tipo: TipoLancamento;
+  /** Data no formato yyyy-MM-dd. */
+  data: string;
+  valor: number;
+  situacao: SituacaoLancamento;
+  nomeFavorecido: string;
+  nomeCategoria: string | null;
+  nomeSubcategoria: string | null;
+  memo: string | null;
+  outraContaId: string | null;
+  nomeOutraConta: string | null;
+  saldoApos: number;
+}
+
+export interface Movimentacao {
+  contaId: string;
+  saldoInicial: number;
+  lancamentos: Lancamento[];
+  saldoFinal: number;
+}
+
+export interface OpcoesLancamento {
+  favorecidos: { nome: string; ultimaCategoria: string | null; ultimaSubcategoria: string | null; ultimoValor: number | null }[];
+  categorias: { nome: string; subcategorias: string[] }[];
+  contas: { id: string; nome: string }[];
+}
+
+export interface SalvarLancamento {
+  natureza: NaturezaLancamento;
+  contaId: string;
+  contaDestinoId: string | null;
+  data: string;
+  valor: number;
+  nomeFavorecido: string | null;
+  nomeCategoria: string | null;
+  nomeSubcategoria: string | null;
+  memo: string | null;
+  confirmarSaldoNegativo: boolean;
+}
+
+export interface SaldoNegativo {
+  contaId: string;
+  nomeConta: string;
+  saldoFinal: number;
+  moeda: Moeda;
+}
+
+export interface ResultadoLancamento {
+  gravado: boolean;
+  saldosNegativos: SaldoNegativo[];
+}
+
 /** Erro de regra de negócio devolvido pela API; a mensagem vai ao usuário como está. */
 export class ErroRegra extends Error {}
 
@@ -107,4 +166,11 @@ export const api = {
   cadastros: (tipo: TipoCadastro) => chamar<Cadastro[]>('GET', `/${tipo}`),
   renomearCadastro: (tipo: TipoCadastro, id: string, nome: string) => chamar<void>('PUT', `/${tipo}/${id}`, { nome }),
   excluirCadastro: (tipo: TipoCadastro, id: string) => chamar<void>('DELETE', `/${tipo}/${id}`),
+  movimentacao: (contaId: string) => chamar<Movimentacao>('GET', `/contas/${contaId}/lancamentos`),
+  opcoesLancamento: (contaId: string) => chamar<OpcoesLancamento>('GET', `/lancamentos/opcoes?contaId=${contaId}`),
+  criarLancamento: (dados: SalvarLancamento) => chamar<ResultadoLancamento>('POST', '/lancamentos', dados),
+  alterarLancamento: (id: string, dados: SalvarLancamento) => chamar<ResultadoLancamento>('PUT', `/lancamentos/${id}`, dados),
+  marcarLancamento: (id: string, situacao: SituacaoLancamento) => chamar<void>('PUT', `/lancamentos/${id}/situacao`, { situacao }),
+  moverLancamento: (id: string, contaId: string) => chamar<void>('POST', `/lancamentos/${id}/mover`, { contaId }),
+  excluirLancamento: (id: string) => chamar<void>('DELETE', `/lancamentos/${id}`),
 };

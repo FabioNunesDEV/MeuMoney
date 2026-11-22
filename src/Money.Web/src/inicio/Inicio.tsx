@@ -1,9 +1,9 @@
 import { Plus, Star, Wallet } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { api, type TipoConta } from '../api';
-import { classes, dinheiro, hojePorExtenso } from '../comum/formato';
+import { dinheiro, hojePorExtenso } from '../comum/formato';
 import { aparenciaTipo, SeloTipo } from '../comum/tiposConta';
-import { BlocoPainel, Botao, Pagina, Secao, Tarefa } from '../comum/ui';
+import { BlocoPainel, Botao, Pagina, Secao, Tarefa, ValorSaldo } from '../comum/ui';
 import { useDados } from '../comum/useDados';
 
 /** Página Início, como a home page financeira do Money: saldos, distribuição e contas favoritas. */
@@ -82,9 +82,7 @@ export function Inicio(props: { irParaContas: () => void; abrirConta: (id: strin
                       <span className="block truncate font-medium text-realce underline-offset-2 hover:underline">{conta.nome}</span>
                       <span className="block truncate text-[11.5px] text-suave">{conta.nomeInstituicao ?? 'Sem instituição'}</span>
                     </span>
-                    <span className={classes('font-semibold tabular-nums', conta.saldo < 0 && 'text-negativo')}>
-                      {dinheiro(conta.saldo, conta.moeda)}
-                    </span>
+                    <ValorSaldo valor={conta.saldo} moeda={conta.moeda} />
                   </button>
                 </li>
               ))}
@@ -98,15 +96,17 @@ export function Inicio(props: { irParaContas: () => void; abrirConta: (id: strin
               {gerenciador.totais.map((total) => (
                 <div key={total.moeda.codigo} className="flex items-baseline gap-3 border-b border-borda px-3 py-2 last:border-b-0">
                   <dt className="flex-1 text-suave">Total em {total.moeda.nome.toLowerCase()}</dt>
-                  <dd className={classes('text-lg font-semibold tabular-nums', total.total < 0 && 'text-negativo')}>
-                    {dinheiro(total.total, total.moeda)}
+                  <dd className="text-lg">
+                    <ValorSaldo valor={total.total} moeda={total.moeda} />
                   </dd>
                 </div>
               ))}
               {dividas < 0 && (
                 <div className="flex items-baseline gap-3 px-3 py-2">
                   <dt className="flex-1 text-suave">Dívidas em {principal.nome.toLowerCase()}</dt>
-                  <dd className="font-semibold text-negativo tabular-nums">{dinheiro(dividas, principal)}</dd>
+                  <dd>
+                    <ValorSaldo valor={dividas} moeda={principal} />
+                  </dd>
                 </div>
               )}
             </dl>

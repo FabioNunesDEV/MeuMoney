@@ -97,6 +97,112 @@ namespace Money.Data.Sqlite.Migrations
                     b.ToTable("InstituicoesFinanceiras", (string)null);
                 });
 
+            modelBuilder.Entity("Money.Domain.Lancamentos.Categoria", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Categorias", (string)null);
+                });
+
+            modelBuilder.Entity("Money.Domain.Lancamentos.Favorecido", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Favorecidos", (string)null);
+                });
+
+            modelBuilder.Entity("Money.Domain.Lancamentos.Lancamento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("CategoriaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("ContaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateOnly>("Data")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("FavorecidoId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Memo")
+                        .HasMaxLength(255)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Situacao")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("SubcategoriaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasMaxLength(25)
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid?>("TransferenciaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal>("Valor")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoriaId");
+
+                    b.HasIndex("FavorecidoId");
+
+                    b.HasIndex("SubcategoriaId");
+
+                    b.HasIndex("TransferenciaId");
+
+                    b.HasIndex("ContaId", "Data");
+
+                    b.ToTable("Lancamentos", (string)null);
+                });
+
+            modelBuilder.Entity("Money.Domain.Lancamentos.Subcategoria", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("TEXT");
+
+                    b.Property<Guid>("CategoriaId")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoriaId");
+
+                    b.ToTable("Subcategorias", (string)null);
+                });
+
             modelBuilder.Entity("Money.Domain.Contas.Conta", b =>
                 {
                     b.HasOne("Money.Domain.Contas.Conta", null)
@@ -113,6 +219,40 @@ namespace Money.Data.Sqlite.Migrations
                         .WithMany()
                         .HasForeignKey("InstituicaoFinanceiraId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Money.Domain.Lancamentos.Lancamento", b =>
+                {
+                    b.HasOne("Money.Domain.Lancamentos.Categoria", null)
+                        .WithMany()
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Money.Domain.Contas.Conta", null)
+                        .WithMany()
+                        .HasForeignKey("ContaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Money.Domain.Lancamentos.Favorecido", null)
+                        .WithMany()
+                        .HasForeignKey("FavorecidoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Money.Domain.Lancamentos.Subcategoria", null)
+                        .WithMany()
+                        .HasForeignKey("SubcategoriaId")
+                        .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("Money.Domain.Lancamentos.Subcategoria", b =>
+                {
+                    b.HasOne("Money.Domain.Lancamentos.Categoria", null)
+                        .WithMany()
+                        .HasForeignKey("CategoriaId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

@@ -4,7 +4,8 @@
   Paleta, na organização do Money 99: barras em azul-petróleo escuro com texto claro (módulos, título
   da página, painel de tarefas, faixas de seção) e conteúdo em superfície clara e neutra. O âmbar é o
   complementar do azul-petróleo e marca só a ação principal e o módulo atual. As cores de tipo de
-  conta são dessaturadas. Verde e vermelho ficam reservados para valores.
+  conta são dessaturadas. Saldo positivo em azul próprio (--saldo-positivo, diferente do --realce dos
+  links) e negativo em vermelho; o verde fica para entradas e variações.
   --barra e --sobre-barra ficam em #rrggbb nos dois temas: comum/tema.ts as manda para a janela, que
   pinta a barra de título do Windows com elas e não entende outro formato.
 */
@@ -19,6 +20,7 @@
   --realce: #0e7490;
   --realce-fundo: #e3f2f6;
   --positivo: #197a45;
+  --saldo-positivo: #1f5fbf;
   --negativo: #b4232c;
   --barra: #0c2f39;
   --faixa: #14505e;
@@ -49,6 +51,7 @@
   --realce: #55b9d2;
   --realce-fundo: #17323b;
   --positivo: #5cc98a;
+  --saldo-positivo: #7fb0f2;
   --negativo: #f07c80;
   --barra: #081d23;
   --faixa: #0f3a45;
@@ -73,6 +76,7 @@
   --color-realce: var(--realce);
   --color-realce-fundo: var(--realce-fundo);
   --color-positivo: var(--positivo);
+  --color-saldo-positivo: var(--saldo-positivo);
   --color-negativo: var(--negativo);
   --color-barra: var(--barra);
   --color-faixa: var(--faixa);

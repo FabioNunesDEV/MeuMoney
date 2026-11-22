@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
 using Money.Api.Comum;
 using Money.Api.Contas;
+using Money.Api.Lancamentos;
 
 namespace Money.Api;
 
@@ -32,6 +33,7 @@ public static class InjecaoDependencia
     {
         var api = rotas.MapGroup("/api").AddEndpointFilter<FiltroRegraNegocio>();
         api.MapContas();
+        api.MapLancamentos();
         return api;
     }
 }

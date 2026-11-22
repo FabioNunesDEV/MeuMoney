@@ -62,6 +62,11 @@ export const test = base.extend<{ janela: Page }>({
 
 export { expect };
 
+/** Endereço do servidor local do aplicativo aberto na janela, para chamar a API direto no teste. */
+export function enderecoDoAplicativo(janela: Page): string {
+  return new URL(janela.url()).origin;
+}
+
 // Os processos do WebView2 demoram um pouco a soltar os arquivos depois de encerrados.
 async function apagarPasta(pasta: string): Promise<void> {
   const limite = Date.now() + 15_000;

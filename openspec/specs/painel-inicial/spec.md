@@ -26,7 +26,7 @@ em barra proporcional com a porcentagem de cada tipo. A moeda principal é a pri
 
 #### Scenario: Dívidas
 - **WHEN** existe um cartão de crédito em reais com saldo devedor 500,00
-- **THEN** a página mostra dívidas de −R$ 500,00
+- **THEN** a página mostra dívidas de (R$ 500,00), em vermelho e negrito
 
 ### Requirement: Contas favoritas
 A página Início SHALL listar as contas abertas marcadas como favoritas, com ícone do tipo, nome,

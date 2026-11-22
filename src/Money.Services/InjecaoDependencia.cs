@@ -4,6 +4,7 @@
 
 using Microsoft.Extensions.DependencyInjection;
 using Money.Services.Contas;
+using Money.Services.Lancamentos;
 
 namespace Money.Services;
 
@@ -18,6 +19,7 @@ public static class InjecaoDependencia
         servicos.AddScoped<ContaServico>();
         servicos.AddScoped<InstituicaoFinanceiraServico>();
         servicos.AddScoped<GrupoContaServico>();
+        servicos.AddScoped<LancamentoServico>();
         return servicos;
     }
 }
