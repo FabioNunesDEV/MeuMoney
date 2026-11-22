@@ -50,7 +50,9 @@ A saída do SDK vem em português nesta máquina: decidir por código de saída,
 
 Pacotes npm aprovados (`src/Money.Web/package.json`): `react`, `react-dom`, `radix-ui`, `lucide-react`,
 `sonner`, `tailwindcss`, `@tailwindcss/vite`, `vite`, `@vitejs/plugin-react`, `typescript`,
-`@types/react`, `@types/react-dom`, `@playwright/test`. Para gráficos, quando vierem, o previsto é `recharts`.
+`@types/react`, `@types/react-dom`, `@playwright/test`, `recharts` (gráficos; traz o `react-is` como
+dependência). Tela que usa `recharts` é carregada sob demanda (`React.lazy`), para não pesar na
+abertura do aplicativo.
 
 JSON com o `System.Text.Json` do próprio .NET; não usar `Newtonsoft.Json`.
 

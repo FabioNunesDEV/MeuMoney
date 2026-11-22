@@ -129,6 +129,18 @@ export interface ResultadoLancamento {
   saldosNegativos: SaldoNegativo[];
 }
 
+export interface HistoricoSaldo {
+  contaId: string;
+  de: string;
+  ate: string;
+  pontos: { data: string; saldo: number }[];
+  saldoInicioPeriodo: number;
+  maior: number;
+  menor: number;
+  final: number;
+  temLancamentos: boolean;
+}
+
 /** Erro de regra de negócio devolvido pela API; a mensagem vai ao usuário como está. */
 export class ErroRegra extends Error {}
 
@@ -166,6 +178,8 @@ export const api = {
   cadastros: (tipo: TipoCadastro) => chamar<Cadastro[]>('GET', `/${tipo}`),
   renomearCadastro: (tipo: TipoCadastro, id: string, nome: string) => chamar<void>('PUT', `/${tipo}/${id}`, { nome }),
   excluirCadastro: (tipo: TipoCadastro, id: string) => chamar<void>('DELETE', `/${tipo}/${id}`),
+  historico: (contaId: string, de: string | null, ate: string) =>
+    chamar<HistoricoSaldo>('GET', `/contas/${contaId}/historico?ate=${ate}${de ? `&de=${de}` : ''}`),
   movimentacao: (contaId: string) => chamar<Movimentacao>('GET', `/contas/${contaId}/lancamentos`),
   opcoesLancamento: (contaId: string) => chamar<OpcoesLancamento>('GET', `/lancamentos/opcoes?contaId=${contaId}`),
   criarLancamento: (dados: SalvarLancamento) => chamar<ResultadoLancamento>('POST', '/lancamentos', dados),

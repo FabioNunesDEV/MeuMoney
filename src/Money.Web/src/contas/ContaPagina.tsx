@@ -1,5 +1,5 @@
 import { ArrowLeft, ClipboardList, History, ListOrdered, Wallet } from 'lucide-react';
-import { type ReactNode, useState } from 'react';
+import { lazy, type ReactNode, Suspense, useState } from 'react';
 import { toast } from 'sonner';
 import { api, type Conta } from '../api';
 import { dinheiro } from '../comum/formato';
@@ -10,7 +10,10 @@ import { Movimentacao } from '../lancamentos/Movimentacao';
 import { acoesDaConta } from './acoes';
 import { ContaDialogo } from './ContaDialogo';
 
-type Visao = 'movimentacao' | 'detalhes';
+type Visao = 'movimentacao' | 'detalhes' | 'historico';
+
+// O Histórico usa o recharts: carregado só quando aberto, para não pesar na abertura do aplicativo.
+const Historico = lazy(() => import('../lancamentos/Historico').then((m) => ({ default: m.Historico })));
 
 function Dado({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
@@ -76,7 +79,7 @@ export function ContaPagina({ id, voltar, abrirConta }: { id: string; voltar: ()
             <Tarefa icone={ClipboardList} ativo={visao === 'detalhes'} aoClicar={() => setVisao('detalhes')}>
               Detalhes
             </Tarefa>
-            <Tarefa icone={History} embreve>
+            <Tarefa icone={History} embreve={!temMovimentacao} ativo={visao === 'historico'} aoClicar={() => setVisao('historico')}>
               Histórico
             </Tarefa>
           </BlocoPainel>
@@ -105,10 +108,20 @@ export function ContaPagina({ id, voltar, abrirConta }: { id: string; voltar: ()
             <Botao
               variante={visao === 'detalhes' ? 'primario' : 'padrao'}
               icone={ClipboardList}
-              className="-ml-px rounded-l-none"
+              className="-ml-px rounded-none"
               onClick={() => setVisao('detalhes')}
             >
               Detalhes
+            </Botao>
+            <Botao
+              variante={visao === 'historico' ? 'primario' : 'padrao'}
+              icone={History}
+              disabled={!temMovimentacao}
+              title={temMovimentacao ? undefined : 'Em breve'}
+              className="-ml-px rounded-l-none"
+              onClick={() => setVisao('historico')}
+            >
+              Histórico
             </Botao>
           </div>
           <MenuBotao acoes={menuContas} gatilho={<Botao icone={Wallet}>Contas</Botao>} />
@@ -121,9 +134,13 @@ export function ContaPagina({ id, voltar, abrirConta }: { id: string; voltar: ()
         </>
       }
     >
-      {visao === 'movimentacao' ? (
-        <Movimentacao conta={conta} aoMudar={recarregar} abrirConta={abrirConta} />
-      ) : (
+      {visao === 'movimentacao' && <Movimentacao conta={conta} aoMudar={recarregar} abrirConta={abrirConta} />}
+      {visao === 'historico' && (
+        <Suspense fallback={<p className="text-suave">Carregando…</p>}>
+          <Historico conta={conta} irParaMovimentacao={() => setVisao('movimentacao')} />
+        </Suspense>
+      )}
+      {visao === 'detalhes' && (
         <>
           <div className="mb-4 flex items-center gap-3">
             <SeloTipo tipo={conta.tipo} tamanho="enorme" />
