@@ -9,6 +9,7 @@ import { useDados } from '../comum/useDados';
 import { acoesDaConta } from './acoes';
 import { CadastrosDialogo } from './CadastrosDialogo';
 import { ContaDialogo } from './ContaDialogo';
+import { NovaContaAssistente } from './NovaContaAssistente';
 
 type Agrupamento = 'tipo' | 'instituicao' | 'grupo';
 type Exibicao = 'icones' | 'lista';
@@ -259,12 +260,22 @@ export function Contas({ abrirConta }: { abrirConta: (id: string) => void }) {
         </Secao>
       ))}
 
-      {formulario && (
+      {formulario?.conta && (
         <ContaDialogo
           conta={formulario.conta}
           aoFechar={() => setFormulario(null)}
           aoSalvar={(salva) => {
-            toast.success(formulario.conta ? `"${salva.nome}" foi alterada.` : `"${salva.nome}" foi criada.`);
+            toast.success(`"${salva.nome}" foi alterada.`);
+            setFormulario(null);
+            void recarregar();
+          }}
+        />
+      )}
+      {formulario && !formulario.conta && (
+        <NovaContaAssistente
+          aoFechar={() => setFormulario(null)}
+          aoSalvar={(salva) => {
+            toast.success(`"${salva.nome}" foi criada.`);
             setFormulario(null);
             void recarregar();
           }}

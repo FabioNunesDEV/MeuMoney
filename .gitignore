@@ -437,3 +437,6 @@ imagens_tela/
 
 # Capturas do navegador de teste (Playwright)
 .playwright-mcp/
+
+# Instalação do Money 99 usada como referência, não versionar
+Money99/

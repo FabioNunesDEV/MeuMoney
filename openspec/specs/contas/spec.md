@@ -12,24 +12,59 @@ escolha: Corrente, Poupança, Dinheiro, Cartão de crédito, Investimento, Ativo
 MUST NOT poder criar, renomear ou excluir tipos.
 
 #### Scenario: Escolha do tipo mostra a descrição
-- **WHEN** o usuário abre a lista de tipos no formulário de conta
-- **THEN** cada um dos sete tipos aparece com sua descrição
+- **WHEN** o usuário chega ao passo de tipo do assistente de nova conta e escolhe um tipo
+- **THEN** os sete tipos aparecem em lista e a descrição do tipo escolhido fica visível ao lado
 
 ### Requirement: Criar conta
-O sistema SHALL criar uma conta a partir de tipo, nome, moeda e saldo inicial obrigatórios, e de
-instituição financeira, grupo e favorita opcionais. A conta nasce aberta.
+O sistema SHALL criar uma conta por um assistente em quatro passos, nesta ordem:
+1. **Instituição**: a conta é mantida numa instituição, escolhida da lista ou digitada como nome
+   novo, ou não é mantida em instituição;
+2. **Tipo**: um dos tipos de conta, com a descrição do escolhido;
+3. **Nome**: nome da conta, com grupo e favorita opcionais;
+4. **Saldo e moeda**: saldo inicial e moeda; no Investimento, a conta caixa no lugar do saldo.
+
+O assistente MUST oferecer Voltar (exceto no primeiro passo), Avançar (Concluir no último) e
+Cancelar. Voltar MUST preservar o que já foi informado. Avançar MUST NOT sair do passo 1 com a
+opção de instituição marcada e o nome da instituição vazio, nem do passo 3 com o nome da conta vazio.
+A conta MUST ser gravada só ao concluir; se o sistema recusar os dados, a mensagem MUST aparecer no
+assistente, que permanece aberto com os dados informados. Cancelar MUST fechar sem criar nada. A
+conta nasce aberta.
 
 #### Scenario: Conta criada com dados válidos
-- **WHEN** o usuário informa tipo Corrente, nome "Conta principal", moeda real e saldo inicial 100,00 e confirma
+- **WHEN** o usuário percorre o assistente com tipo Corrente, nome "Conta principal", moeda real e saldo inicial 100,00 e conclui
 - **THEN** a conta aparece no gerenciador com saldo R$ 100,00 e o sistema confirma a criação
 
 #### Scenario: Conta sem instituição
-- **WHEN** o usuário cria uma conta sem informar instituição
-- **THEN** a conta é criada e aparece como não mantida em instituição
+- **WHEN** o usuário escolhe "não é mantida em instituição", tipo Dinheiro, nome "Carteira", moeda real e saldo 50,00 e conclui
+- **THEN** a conta "Carteira" é criada com saldo R$ 50,00 e aparece como não mantida em instituição
+
+#### Scenario: Conta com instituição nova
+- **WHEN** o usuário marca que a conta é mantida em instituição, digita "Banco A", que ainda não existe, e conclui o assistente
+- **THEN** a instituição "Banco A" é criada e associada à conta
+
+#### Scenario: Instituição em branco
+- **WHEN** o usuário marca que a conta é mantida em instituição, deixa o nome vazio e tenta avançar
+- **THEN** o assistente permanece no passo 1 e pede o nome da instituição ou a opção sem instituição
 
 #### Scenario: Nome sugerido
-- **WHEN** o usuário escolhe instituição e tipo sem ter digitado nome
-- **THEN** o formulário sugere o nome "<instituição> <tipo>", que o usuário pode alterar
+- **WHEN** o usuário informa a instituição "Banco A" e o tipo Corrente e chega ao passo do nome sem ter digitado nome
+- **THEN** o assistente sugere o nome "Banco A Conta corrente", que o usuário pode alterar
+
+#### Scenario: Nome vazio impede avançar
+- **WHEN** o usuário apaga o nome da conta no passo 3 e tenta avançar
+- **THEN** o assistente permanece no passo 3 e indica que o nome é obrigatório
+
+#### Scenario: Voltar preserva os dados
+- **WHEN** o usuário chega ao passo 4, volta ao passo 2 e avança de novo
+- **THEN** a instituição, o tipo e o nome informados antes continuam preenchidos
+
+#### Scenario: Recusa ao concluir
+- **WHEN** o usuário conclui o assistente com o nome de uma conta que já existe
+- **THEN** o assistente continua aberto com a mensagem de nome repetido e nenhuma conta é criada
+
+#### Scenario: Cancelar o assistente
+- **WHEN** o usuário cancela o assistente em qualquer passo
+- **THEN** o pop-up fecha e nenhuma conta, instituição ou grupo é criado
 
 ### Requirement: Nome da conta válido e único
 O nome da conta MUST ter de 1 a 100 caracteres sem contar espaços nas pontas e MUST ser único entre
@@ -71,8 +106,8 @@ de Investimento MUST NOT ter saldo inicial próprio: seu saldo exibido é zero a
 - **THEN** o sistema recusa o valor
 
 #### Scenario: Investimento sem saldo inicial
-- **WHEN** o usuário escolhe o tipo Investimento no formulário
-- **THEN** o campo de saldo inicial não é oferecido e a conta é criada com saldo zero
+- **WHEN** o usuário escolhe o tipo Investimento e chega ao último passo do assistente
+- **THEN** o campo de saldo inicial não é oferecido, a escolha da conta caixa aparece no lugar e a conta é criada com saldo zero
 
 ### Requirement: Vínculo entre conta de investimento e conta caixa
 Uma conta de Investimento SHALL poder ter uma conta caixa vinculada, ou nenhuma. A conta caixa MUST
@@ -191,8 +226,13 @@ até existirem lançamentos.
 ### Requirement: Ações pelo teclado e menu de contexto
 Criar conta SHALL estar disponível pelo atalho Ctrl+N no gerenciador. Editar, favoritar e
 encerrar/reabrir MUST estar disponíveis no menu de contexto da linha da conta, no botão
-"Mais ações" da linha e pelo teclado.
+"Mais ações" da linha e pelo teclado. No assistente de nova conta, Enter MUST avançar (ou concluir
+no último passo) e Esc MUST cancelar.
 
 #### Scenario: Atalho de nova conta
 - **WHEN** o usuário pressiona Ctrl+N no gerenciador
-- **THEN** o formulário de nova conta é aberto
+- **THEN** o assistente de nova conta é aberto no passo da instituição
+
+#### Scenario: Avançar com Enter
+- **WHEN** o usuário pressiona Enter no passo do nome com um nome preenchido
+- **THEN** o assistente vai para o passo de saldo e moeda

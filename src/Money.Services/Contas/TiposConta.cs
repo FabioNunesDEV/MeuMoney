@@ -12,13 +12,34 @@ internal static class TiposConta
     /// <summary>Obtém todos os tipos, na ordem de exibição.</summary>
     public static IReadOnlyList<TipoContaDto> Todos { get; } =
     [
-        new(TipoConta.Corrente, "Conta corrente", "Conta bancária do dia a dia: depósitos, pagamentos e transferências."),
-        new(TipoConta.Poupanca, "Poupança", "Conta bancária para guardar dinheiro com rendimento."),
-        new(TipoConta.Dinheiro, "Dinheiro", "Dinheiro em espécie ou caixa de corretora, onde fica o valor não investido."),
-        new(TipoConta.CartaoCredito, "Cartão de crédito", "Compras no cartão; o saldo é o valor devido."),
-        new(TipoConta.Investimento, "Investimento", "Ações, fundos e outros ativos numa corretora ou banco, com uma conta caixa ligada."),
-        new(TipoConta.Ativo, "Ativo", "Bem com valor de mercado, como imóvel ou veículo."),
-        new(TipoConta.Passivo, "Passivo", "Dívida a pagar, como empréstimo ou financiamento."),
+        new(
+            TipoConta.Corrente,
+            "Conta corrente",
+            "Use para a conta do banco onde entram o salário e saem os pagamentos, saques e transferências do dia a dia."),
+        new(
+            TipoConta.Poupanca,
+            "Poupança",
+            "Use para a conta do banco onde você guarda dinheiro rendendo, separado do dia a dia."),
+        new(
+            TipoConta.Dinheiro,
+            "Dinheiro",
+            "Use para dinheiro em espécie, como a carteira, e acompanhar os gastos do dia a dia. Também serve de caixa de uma corretora."),
+        new(
+            TipoConta.CartaoCredito,
+            "Cartão de crédito",
+            "Use para cada cartão de crédito: registra as compras, e o saldo é o valor devido na fatura."),
+        new(
+            TipoConta.Investimento,
+            "Investimento",
+            "Use para ações, fundos e outros ativos numa corretora ou banco; o dinheiro não investido fica numa conta caixa ligada."),
+        new(
+            TipoConta.Ativo,
+            "Ativo",
+            "Use para um bem que tem valor de mercado, como um imóvel ou um veículo."),
+        new(
+            TipoConta.Passivo,
+            "Passivo",
+            "Use para uma dívida a pagar, como um empréstimo ou um financiamento; o saldo é o valor devido."),
     ];
 
     /// <summary>Obtém o texto exibido de um tipo.</summary>
