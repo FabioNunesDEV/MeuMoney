@@ -2,9 +2,9 @@ import { Folder, Landmark, LayoutGrid, List, MoreHorizontal, Plus, Search, Star,
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { api, type Conta, type TipoCadastro } from '../api';
-import { classes, dinheiro } from '../comum/formato';
+import { classes } from '../comum/formato';
 import { aparenciaTipo, SeloTipo } from '../comum/tiposConta';
-import { BlocoPainel, Botao, estiloEntradaBase, MenuBotao, MenuContexto, Pagina, Secao, Tarefa } from '../comum/ui';
+import { BlocoPainel, Botao, estiloEntradaBase, MenuBotao, MenuContexto, Pagina, Secao, Tarefa, ValorSaldo } from '../comum/ui';
 import { useDados } from '../comum/useDados';
 import { acoesDaConta } from './acoes';
 import { CadastrosDialogo } from './CadastrosDialogo';
@@ -168,9 +168,7 @@ export function Contas({ abrirConta }: { abrirConta: (id: string) => void }) {
             </span>
             <span className="font-semibold">Saldos:</span>
             {gerenciador?.totais.map((total) => (
-              <span key={total.moeda.codigo} className={classes('font-semibold text-texto tabular-nums', total.total < 0 && 'text-negativo')}>
-                {dinheiro(total.total, total.moeda)}
-              </span>
+              <ValorSaldo key={total.moeda.codigo} valor={total.total} moeda={total.moeda} />
             ))}
           </>
         )
@@ -201,9 +199,7 @@ export function Contas({ abrirConta }: { abrirConta: (id: string) => void }) {
             {grupo.contas.map((conta) => {
               const acoes = acoesDaConta(conta, () => setFormulario({ conta }), recarregar);
               const abrir = () => abrirConta(conta.id);
-              const saldo = (
-                <span className={classes('font-semibold tabular-nums', conta.saldo < 0 && 'text-negativo')}>{dinheiro(conta.saldo, conta.moeda)}</span>
-              );
+              const saldo = <ValorSaldo valor={conta.saldo} moeda={conta.moeda} />;
               const maisAcoes = (
                 <MenuBotao acoes={acoes} gatilho={<Botao variante="discreto" icone={MoreHorizontal} aria-label={`Mais ações de ${conta.nome}`} />} />
               );

@@ -1,13 +1,16 @@
-import { ArrowLeft, ClipboardList, History, ListOrdered, type LucideIcon } from 'lucide-react';
+import { ArrowLeft, ClipboardList, History, ListOrdered, Wallet } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 import { toast } from 'sonner';
-import { api } from '../api';
-import { classes, dinheiro } from '../comum/formato';
+import { api, type Conta } from '../api';
+import { dinheiro } from '../comum/formato';
 import { SeloTipo } from '../comum/tiposConta';
-import { BlocoPainel, Botao, Pagina, Secao, Tarefa } from '../comum/ui';
+import { type AcaoMenu, BlocoPainel, Botao, MenuBotao, Pagina, Secao, Tarefa, ValorSaldo } from '../comum/ui';
 import { useDados } from '../comum/useDados';
+import { Movimentacao } from '../lancamentos/Movimentacao';
 import { acoesDaConta } from './acoes';
 import { ContaDialogo } from './ContaDialogo';
+
+type Visao = 'movimentacao' | 'detalhes';
 
 function Dado({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   return (
@@ -18,25 +21,39 @@ function Dado({ rotulo, children }: { rotulo: string; children: ReactNode }) {
   );
 }
 
-function EmBreve({ icone: Icone, texto }: { icone: LucideIcon; texto: string }) {
-  return (
-    <div className="flex items-center gap-3 px-3 py-4 text-suave">
-      <Icone className="size-5 text-fraco" aria-hidden />
-      <p>{texto}</p>
-    </div>
-  );
+// Menu "Contas", como no Money: o gerenciador no topo, as contas abertas e as encerradas num submenu.
+function acoesMenuContas(contas: Conta[], atual: string, voltar: () => void, abrirConta: (id: string) => void): AcaoMenu[] {
+  const item = (c: Conta): AcaoMenu => ({ rotulo: c.nome, marcado: c.id === atual, aoEscolher: () => abrirConta(c.id) });
+  const abertas = contas.filter((c) => !c.encerrada).map(item);
+  const encerradas = contas.filter((c) => c.encerrada).map(item);
+  const acoes: AcaoMenu[] = [{ rotulo: 'Gerenciador de contas', icone: Wallet, aoEscolher: voltar }];
+  if (abertas.length > 0) {
+    abertas[0] = { ...abertas[0], separar: true };
+  }
+
+  acoes.push(...abertas);
+  if (encerradas.length > 0) {
+    acoes.push({ rotulo: 'Contas encerradas', separar: true, submenu: encerradas });
+  }
+
+  return acoes;
 }
 
-/** Página de uma conta, como no Money: movimentação, detalhes e histórico. Por ora, só os detalhes. */
-export function ContaPagina({ id, voltar }: { id: string; voltar: () => void }) {
+/** Página de uma conta, como no Money: Movimentação (só na conta Dinheiro, por ora), Detalhes e Histórico. */
+export function ContaPagina({ id, voltar, abrirConta }: { id: string; voltar: () => void; abrirConta: (id: string) => void }) {
   const [conta, recarregar] = useDados(() => api.conta(id), [id]);
+  const [todas] = useDados(() => api.gerenciador(true), []);
   const [editando, setEditando] = useState(false);
+  const [escolhida, setVisao] = useState<Visao | null>(null);
 
   if (!conta) {
     return <Pagina titulo="Conta" painel={null} children={null} />;
   }
 
+  const temMovimentacao = conta.tipo === 'Dinheiro';
+  const visao: Visao = escolhida ?? (temMovimentacao ? 'movimentacao' : 'detalhes');
   const acoes = acoesDaConta(conta, () => setEditando(true), recarregar);
+  const menuContas = acoesMenuContas(todas?.contas ?? [], conta.id, voltar, abrirConta);
 
   return (
     <Pagina
@@ -53,10 +70,10 @@ export function ContaPagina({ id, voltar }: { id: string; voltar: () => void }) 
       painel={
         <>
           <BlocoPainel titulo="Conta">
-            <Tarefa icone={ListOrdered} embreve>
+            <Tarefa icone={ListOrdered} embreve={!temMovimentacao} ativo={visao === 'movimentacao'} aoClicar={() => setVisao('movimentacao')}>
               Movimentação
             </Tarefa>
-            <Tarefa icone={ClipboardList} ativo>
+            <Tarefa icone={ClipboardList} ativo={visao === 'detalhes'} aoClicar={() => setVisao('detalhes')}>
               Detalhes
             </Tarefa>
             <Tarefa icone={History} embreve>
@@ -64,49 +81,81 @@ export function ContaPagina({ id, voltar }: { id: string; voltar: () => void }) 
             </Tarefa>
           </BlocoPainel>
           <BlocoPainel titulo="Ir para">
+            <MenuBotao acoes={menuContas} gatilho={<Tarefa icone={Wallet}>Contas</Tarefa>} />
             <Tarefa icone={ArrowLeft} aoClicar={voltar}>
               Gerenciador de contas
             </Tarefa>
           </BlocoPainel>
         </>
       }
+      opcoesSoEstreita
+      opcoes={
+        <>
+          <div className="flex" role="group" aria-label="Visão">
+            <Botao
+              variante={visao === 'movimentacao' ? 'primario' : 'padrao'}
+              icone={ListOrdered}
+              disabled={!temMovimentacao}
+              title={temMovimentacao ? undefined : 'Em breve'}
+              className="rounded-r-none"
+              onClick={() => setVisao('movimentacao')}
+            >
+              Movimentação
+            </Botao>
+            <Botao
+              variante={visao === 'detalhes' ? 'primario' : 'padrao'}
+              icone={ClipboardList}
+              className="-ml-px rounded-l-none"
+              onClick={() => setVisao('detalhes')}
+            >
+              Detalhes
+            </Botao>
+          </div>
+          <MenuBotao acoes={menuContas} gatilho={<Botao icone={Wallet}>Contas</Botao>} />
+        </>
+      }
       rodape={
         <>
-          <span className="font-semibold">Saldo:</span>
-          <span className={classes('font-semibold text-texto tabular-nums', conta.saldo < 0 && 'text-negativo')}>{dinheiro(conta.saldo, conta.moeda)}</span>
+          <span className="font-semibold">{visao === 'movimentacao' ? 'Saldo final:' : 'Saldo:'}</span>
+          <ValorSaldo valor={conta.saldo} moeda={conta.moeda} />
         </>
       }
     >
-      <div className="mb-4 flex items-center gap-3">
-        <SeloTipo tipo={conta.tipo} tamanho="enorme" />
-        <div>
-          <p className="text-suave">
-            {conta.nomeTipo}
-            {conta.encerrada && ' · Encerrada'}
-          </p>
-          <p className={classes('text-2xl font-semibold tabular-nums', conta.saldo < 0 && 'text-negativo')}>{dinheiro(conta.saldo, conta.moeda)}</p>
-        </div>
-      </div>
+      {visao === 'movimentacao' ? (
+        <Movimentacao conta={conta} aoMudar={recarregar} abrirConta={abrirConta} />
+      ) : (
+        <>
+          <div className="mb-4 flex items-center gap-3">
+            <SeloTipo tipo={conta.tipo} tamanho="enorme" />
+            <div>
+              <p className="text-suave">
+                {conta.nomeTipo}
+                {conta.encerrada && ' · Encerrada'}
+              </p>
+              <ValorSaldo valor={conta.saldo} moeda={conta.moeda} className="text-2xl" />
+            </div>
+          </div>
 
-      <Secao titulo="Detalhes da conta">
-        <dl>
-          <Dado rotulo="Nome">{conta.nome}</Dado>
-          <Dado rotulo="Tipo">{conta.nomeTipo}</Dado>
-          <Dado rotulo="Instituição">{conta.nomeInstituicao ?? 'Não é mantida em instituição'}</Dado>
-          <Dado rotulo="Moeda">
-            {conta.moeda.nome} ({conta.moeda.codigo})
-          </Dado>
-          {conta.tipo !== 'Investimento' && <Dado rotulo="Saldo inicial">{dinheiro(conta.saldo, conta.moeda)}</Dado>}
-          {conta.tipo === 'Investimento' && <Dado rotulo="Conta caixa">{conta.nomeContaCaixa ?? 'Sem conta caixa'}</Dado>}
-          <Dado rotulo="Grupo">{conta.nomeGrupo ?? 'Sem grupo'}</Dado>
-          <Dado rotulo="Favorita">{conta.favorita ? 'Sim' : 'Não'}</Dado>
-          <Dado rotulo="Situação">{conta.encerrada ? 'Encerrada' : 'Aberta'}</Dado>
-        </dl>
-      </Secao>
-
-      <Secao titulo="Movimentação">
-        <EmBreve icone={ListOrdered} texto="Os lançamentos desta conta aparecerão aqui quando o módulo Lançamentos for entregue." />
-      </Secao>
+          <Secao titulo="Detalhes da conta">
+            <dl>
+              <Dado rotulo="Nome">{conta.nome}</Dado>
+              <Dado rotulo="Tipo">{conta.nomeTipo}</Dado>
+              <Dado rotulo="Instituição">{conta.nomeInstituicao ?? 'Não é mantida em instituição'}</Dado>
+              <Dado rotulo="Moeda">
+                {conta.moeda.nome} ({conta.moeda.codigo})
+              </Dado>
+              {conta.tipo !== 'Investimento' && <Dado rotulo="Saldo inicial">{dinheiro(conta.saldoInformado, conta.moeda)}</Dado>}
+              <Dado rotulo="Saldo">
+                <ValorSaldo valor={conta.saldo} moeda={conta.moeda} />
+              </Dado>
+              {conta.tipo === 'Investimento' && <Dado rotulo="Conta caixa">{conta.nomeContaCaixa ?? 'Sem conta caixa'}</Dado>}
+              <Dado rotulo="Grupo">{conta.nomeGrupo ?? 'Sem grupo'}</Dado>
+              <Dado rotulo="Favorita">{conta.favorita ? 'Sim' : 'Não'}</Dado>
+              <Dado rotulo="Situação">{conta.encerrada ? 'Encerrada' : 'Aberta'}</Dado>
+            </dl>
+          </Secao>
+        </>
+      )}
 
       {editando && (
         <ContaDialogo

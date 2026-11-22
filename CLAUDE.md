@@ -176,8 +176,10 @@ falam com a API, por HTTP.
 
 - TypeScript estrito; o `npm run build` falha com erro de tipo. Nomes em português como no C#:
   componentes e tipos em PascalCase (`ContaDialogo`), funções e variáveis em camelCase.
-- Pastas por módulo (`contas/`, `inicio/`) e `comum/` para o que é compartilhado: `ui.tsx` (botão,
-  campo, pop-up, menus, página, cartão), `formato.ts`, `tiposConta.tsx`, `useDados.ts`.
+- Pastas por módulo (`contas/`, `inicio/`, `lancamentos/`) e `comum/` para o que é compartilhado:
+  `ui.tsx` (botão, campo, pop-up, menus, página, cartão, `ValorSaldo`), `formato.ts`,
+  `tiposConta.tsx`, `useDados.ts`. Os menus recebem uma lista de `AcaoMenu`, que pode ter submenu,
+  item marcado e item desativado.
 - Todas as chamadas HTTP passam por `api.ts`, que espelha os DTOs. Tela não faz `fetch` direto.
 - Regra de negócio fica em Services. A tela só valida formato de digitação (ex.: valor em pt-BR) e
   mostra a `mensagem` devolvida pela API.
@@ -196,7 +198,8 @@ falam com a API, por HTTP.
   `janela` (`testes/janela.ts`) abre o `Money.Desktop.exe` compilado com banco, log e dados do
   WebView2 na pasta do teste, se liga ao WebView2 pela porta de depuração e fecha tudo no fim. A
   janela aparece na tela: não usar o mouse enquanto os testes rodam. Localizadores por papel e
-  rótulo (`getByRole`, `getByLabel`). A conferência por captura continua valendo para o visual.
+  rótulo (`getByRole`, `getByLabel`). Dado de partida que não é o assunto do teste nasce pela API do
+  aplicativo aberto (`enderecoDoAplicativo`). A conferência por captura continua valendo para o visual.
 - Nome do teste em português: `Metodo_Cenario_ResultadoEsperado`.
 - Teste nunca toca o banco real em `%LOCALAPPDATA%\MeuMoney`.
 
@@ -226,7 +229,8 @@ Tudo isso é o componente `Pagina` de `comum/ui.tsx`; página nova não monta o 
 | Barra de texto (Conteúdo, Contas, Contas a pagar...) | A barra de módulos, igual na ordem |
 | Home page com faixas de título | Início com seções em faixa: contas favoritas (nome como link e saldo final), saldos, onde está o dinheiro |
 | Gerenciador de contas com ícones grandes | Ícones grandes por conta, agrupados em seções; a visão em lista é a alternativa; saldos no rodapé |
-| Clique na conta abre a conta | Duplo clique ou Enter abre a página da conta, com Movimentação, Detalhes e Histórico no painel |
+| Clique na conta abre a conta | Duplo clique ou Enter abre a página da conta, com Movimentação, Detalhes e Histórico no painel e o menu "Contas" para ir a outra |
+| Registro com formulário embaixo (Gasto, Recebimento, Transferência) | Movimentação: grade com saldo linha a linha e, embaixo, o formulário em abas com Novo, Editar, Inserir e Cancelar |
 | Botões no rodapé (Nova conta...) | Comandos na faixa de título e no painel de tarefas; ações do item no menu de contexto e no botão "…" |
 | Assistente com várias janelas | Um pop-up com passos curtos (Voltar, Avançar, Concluir) |
 | Ilustrações clip-art | Nenhuma ilustração; ícones Lucide |
@@ -241,8 +245,12 @@ Tudo isso é o componente `Pagina` de `comum/ui.tsx`; página nova não monta o 
   conteúdo em superfície clara e neutra (`fundo`, `painel`); **âmbar** (`destaque`), o complementar
   do azul-petróleo, só na ação principal e no módulo atual; `realce` para links e seleção no
   conteúdo; cores de tipo de conta dessaturadas (`--tipo-*`) nos selos. Vivo, sem cor gritante.
-- **Verde e vermelho só para valor**: saldo na cor normal do texto, saldo negativo em `negativo`,
-  sempre com o sinal (cor sozinha não basta); `positivo` fica para entradas e variações.
+- **Saldo no formato contábil**: positivo em azul (`saldo-positivo`) e negrito; negativo em vermelho
+  (`negativo`) e negrito, entre parênteses e sem sinal de menos (`(R$ 30,00)`): o parêntese marca o
+  negativo sem depender da cor; zero na cor do texto. Todo saldo passa por `ValorSaldo`
+  (`comum/ui.tsx`); na grade, sem negrito. O montante de um lançamento é sempre positivo e na cor do
+  texto: a coluna (Gastar ou Receber) diz o sentido. O verde (`positivo`) fica para entradas e
+  variações.
 - **Densidade do Money**: texto base de 13 px, linhas de tabela baixas, muita informação por tela.
   Espaçamento em múltiplos de 4.
 - **Valores monetários** no padrão pt-BR com o símbolo da moeda (`R$ 1.234,56`, `US$ 320,10`),

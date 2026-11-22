@@ -9,6 +9,15 @@ export function dinheiro(valor: number, moeda: Moeda): string {
   return `${valor < 0 ? '−' : ''}${moeda.simbolo} ${numero}`;
 }
 
+/**
+ * Saldo no formato contábil: negativo entre parênteses e sem sinal de menos ("(R$ 30,00)"); positivo
+ * e zero como em `dinheiro`.
+ */
+export function dinheiroContabil(valor: number, moeda: Moeda): string {
+  const texto = dinheiro(Math.abs(valor), moeda);
+  return valor < 0 ? `(${texto})` : texto;
+}
+
 /** Valor para um campo de texto, no padrão pt-BR ("1.234,56"). */
 export function valorParaTexto(valor: number, casas: number): string {
   return valor.toLocaleString('pt-BR', { minimumFractionDigits: casas, maximumFractionDigits: casas });
@@ -26,6 +35,19 @@ export function lerValor(texto: string): number | null {
   }
 
   return Number(limpo.replaceAll('.', '').replace(',', '.'));
+}
+
+/** Data no formato da API (yyyy-MM-dd) mostrada como dd/MM/yyyy. */
+export function dataParaTexto(iso: string): string {
+  const [ano, mes, dia] = iso.split('-');
+  return `${dia}/${mes}/${ano}`;
+}
+
+/** Data de hoje no formato da API (yyyy-MM-dd), no fuso da máquina. */
+export function hojeIso(): string {
+  const hoje = new Date();
+  const doisDigitos = (n: number) => String(n).padStart(2, '0');
+  return `${hoje.getFullYear()}-${doisDigitos(hoje.getMonth() + 1)}-${doisDigitos(hoje.getDate())}`;
 }
 
 /** Data de hoje por extenso, em pt-BR. */

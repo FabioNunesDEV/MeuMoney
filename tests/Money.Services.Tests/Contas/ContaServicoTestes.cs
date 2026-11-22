@@ -4,6 +4,7 @@
 
 using Money.Domain.Comum;
 using Money.Domain.Contas;
+using Money.Domain.Lancamentos;
 using Money.Services.Contas;
 using Money.Services.Tests.Fakes;
 
@@ -15,9 +16,10 @@ public class ContaServicoTestes
     private readonly RepositorioFake<Conta> contas = new();
     private readonly RepositorioFake<InstituicaoFinanceira> instituicoes = new();
     private readonly RepositorioFake<GrupoConta> grupos = new();
+    private readonly LancamentoRepositorioFake lancamentos = new();
     private readonly UnidadeDeTrabalhoFake unidade = new();
 
-    private ContaServico Servico => new(this.contas, this.instituicoes, this.grupos, this.unidade);
+    private ContaServico Servico => new(this.contas, this.instituicoes, this.grupos, this.lancamentos, this.unidade);
 
     /// <summary>Os sete tipos vêm com nome e descrição.</summary>
     [Fact]
@@ -311,6 +313,44 @@ public class ContaServicoTestes
 
         Assert.True(this.contas.Itens.Single().Favorita);
     }
+
+    /// <summary>Saldo e total do gerenciador somam os lançamentos não nulos ao saldo inicial.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task ObterGerenciador_ComLancamentos_SaldoETotalIncluemLancamentos()
+    {
+        var criada = await this.Servico.CriarAsync(Dados("Carteira", TipoConta.Dinheiro, saldo: 100m), CancellationToken.None);
+        var conta = this.contas.Itens.Single(c => c.Id == criada.Id);
+        var anulado = Lancamento.CriarGasto(conta, DadosLancamento(20m));
+        anulado.MarcarComo(SituacaoLancamento.Nulo);
+        this.lancamentos.Adicionar(Lancamento.CriarRecebimento(conta, DadosLancamento(50m)));
+        this.lancamentos.Adicionar(Lancamento.CriarGasto(conta, DadosLancamento(30m)));
+        this.lancamentos.Adicionar(anulado);
+
+        var gerenciador = await this.Servico.ObterGerenciadorAsync(false, CancellationToken.None);
+
+        Assert.Equal(120m, gerenciador.Contas.Single().Saldo);
+        Assert.Equal(100m, gerenciador.Contas.Single().SaldoInformado);
+        Assert.Equal(120m, gerenciador.Totais.Single().Total);
+    }
+
+    /// <summary>Conta com lançamentos não troca de moeda.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task Atualizar_MoedaComLancamentos_Recusa()
+    {
+        var criada = await this.Servico.CriarAsync(Dados("Carteira", TipoConta.Dinheiro), CancellationToken.None);
+        var conta = this.contas.Itens.Single(c => c.Id == criada.Id);
+        this.lancamentos.Adicionar(Lancamento.CriarRecebimento(conta, DadosLancamento(10m)));
+
+        var erro = await Assert.ThrowsAsync<RegraNegocioException>(
+            () => this.Servico.AtualizarAsync(conta.Id, Dados("Carteira", TipoConta.Dinheiro, "USD"), CancellationToken.None));
+
+        Assert.Equal("A moeda não muda depois do primeiro lançamento da conta.", erro.Message);
+    }
+
+    private static DadosLancamento DadosLancamento(decimal valor) =>
+        new(new DateOnly(2026, 11, 22), valor, Guid.CreateVersion7(), Guid.CreateVersion7(), null, null);
 
     private static SalvarContaDto Dados(
         string nome,

@@ -1,8 +1,9 @@
 // Componentes de interface compartilhados: botão, campo, pop-up, menus e página com barra de ferramentas.
-import { CircleAlert, type LucideIcon, X } from 'lucide-react';
+import { Check, ChevronRight, CircleAlert, type LucideIcon, X } from 'lucide-react';
 import { AlertDialog, ContextMenu, Dialog, DropdownMenu } from 'radix-ui';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import { classes } from './formato';
+import type { ButtonHTMLAttributes, ComponentProps, ReactNode } from 'react';
+import type { Moeda } from '../api';
+import { classes, dinheiroContabil } from './formato';
 
 type VarianteBotao = 'padrao' | 'primario' | 'discreto' | 'perigo' | 'barra' | 'destaque';
 
@@ -121,13 +122,19 @@ export function Confirmacao(props: { titulo: string; texto: string; confirmar: s
   );
 }
 
-/** Uma ação de menu; `separar` desenha uma linha antes dela. */
+/**
+ * Uma ação de menu. `separar` desenha uma linha antes dela; `submenu` abre outro nível no lugar da
+ * ação; `marcado` mostra a marca de escolhido (situação atual, por exemplo).
+ */
 export interface AcaoMenu {
   rotulo: string;
-  icone: LucideIcon;
-  aoEscolher: () => void;
+  icone?: LucideIcon;
+  aoEscolher?: () => void;
   perigo?: boolean;
   separar?: boolean;
+  desativado?: boolean;
+  marcado?: boolean;
+  submenu?: AcaoMenu[];
 }
 
 const estiloMenu = 'z-50 min-w-[190px] rounded-lg border border-borda bg-painel p-1 shadow-xl';
@@ -135,16 +142,66 @@ const estiloItem =
   'flex cursor-pointer items-center gap-2 rounded-md px-2.5 py-1.5 outline-none select-none data-[highlighted]:bg-fundo';
 
 // O menu de contexto e o menu do botão "Mais ações" mostram as mesmas ações; só muda a peça do Radix.
-function itens(Peca: typeof ContextMenu | typeof DropdownMenu, acoes: AcaoMenu[]) {
-  return acoes.map((acao) => (
-    <div key={acao.rotulo}>
-      {acao.separar && <Peca.Separator className="my-1 h-px bg-borda" />}
-      <Peca.Item className={classes(estiloItem, acao.perigo && 'text-negativo')} onSelect={acao.aoEscolher}>
-        <acao.icone className="size-4" aria-hidden />
-        {acao.rotulo}
-      </Peca.Item>
-    </div>
-  ));
+function itens(Peca: typeof ContextMenu | typeof DropdownMenu, acoes: AcaoMenu[]): ReactNode {
+  return acoes.map((acao) => {
+    const icone = acao.marcado ? (
+      <Check className="size-4" aria-hidden />
+    ) : acao.icone ? (
+      <acao.icone className="size-4" aria-hidden />
+    ) : (
+      <span className="size-4" aria-hidden />
+    );
+    const estilo = classes(estiloItem, acao.perigo && 'text-negativo', 'data-[disabled]:cursor-default data-[disabled]:opacity-45');
+    return (
+      <div key={acao.rotulo}>
+        {acao.separar && <Peca.Separator className="my-1 h-px bg-borda" />}
+        {acao.submenu ? (
+          <Peca.Sub>
+            <Peca.SubTrigger className={classes(estilo, 'data-[state=open]:bg-fundo')} disabled={acao.desativado}>
+              {icone}
+              <span className="flex-1">{acao.rotulo}</span>
+              <ChevronRight className="size-4 text-suave" aria-hidden />
+            </Peca.SubTrigger>
+            <Peca.Portal>
+              <Peca.SubContent className={estiloMenu} sideOffset={2}>
+                {itens(Peca, acao.submenu)}
+              </Peca.SubContent>
+            </Peca.Portal>
+          </Peca.Sub>
+        ) : acao.marcado === undefined ? (
+          <Peca.Item className={estilo} disabled={acao.desativado} onSelect={acao.aoEscolher}>
+            {icone}
+            {acao.rotulo}
+          </Peca.Item>
+        ) : (
+          <Peca.CheckboxItem className={estilo} checked={acao.marcado} disabled={acao.desativado} onSelect={acao.aoEscolher}>
+            {icone}
+            {acao.rotulo}
+          </Peca.CheckboxItem>
+        )}
+      </div>
+    );
+  });
+}
+
+/**
+ * Saldo no formato contábil: positivo em azul, negativo em vermelho entre parênteses, zero na cor do
+ * texto. `forte` (padrão) põe em negrito; a grade usa sem.
+ */
+export function ValorSaldo({ valor, moeda, forte = true, className }: { valor: number; moeda: Moeda; forte?: boolean; className?: string }) {
+  return (
+    <span
+      className={classes(
+        'tabular-nums',
+        forte && 'font-semibold',
+        valor > 0 && 'text-saldo-positivo',
+        valor < 0 && 'text-negativo',
+        className,
+      )}
+    >
+      {dinheiroContabil(valor, moeda)}
+    </span>
+  );
 }
 
 /** Menu de contexto (clique direito ou tecla de menu) em volta do conteúdo. */
@@ -182,6 +239,8 @@ export function Pagina(props: {
   ferramentas?: ReactNode;
   painel: ReactNode;
   opcoes?: ReactNode;
+  /** Mostra a barra de opções só quando o painel de tarefas some (janela estreita). */
+  opcoesSoEstreita?: boolean;
   rodape?: ReactNode;
   children: ReactNode;
 }) {
@@ -194,7 +253,14 @@ export function Pagina(props: {
           {props.ferramentas && <div role="toolbar" className="flex flex-wrap items-center gap-2">{props.ferramentas}</div>}
         </header>
         {props.opcoes && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-borda bg-painel px-4 py-1.5">{props.opcoes}</div>
+          <div
+            className={classes(
+              'flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-borda bg-painel px-4 py-1.5',
+              props.opcoesSoEstreita && 'min-[1001px]:hidden',
+            )}
+          >
+            {props.opcoes}
+          </div>
         )}
         <div className="flex-1 overflow-auto px-4 py-3">{props.children}</div>
         {props.rodape && (
@@ -217,21 +283,33 @@ export function BlocoPainel({ titulo, children }: { titulo: string; children: Re
   );
 }
 
-/** Item do painel de tarefas: uma ação ou uma visão da página; `ativo` marca a visão atual. */
-export function Tarefa(props: { icone: LucideIcon; ativo?: boolean; embreve?: boolean; aoClicar?: () => void; children: ReactNode }) {
+/**
+ * Item do painel de tarefas: uma ação ou uma visão da página; `ativo` marca a visão atual. Aceita as
+ * propriedades de botão, para servir também de gatilho de menu.
+ */
+export function Tarefa({
+  icone: Icone,
+  ativo,
+  embreve,
+  aoClicar,
+  children,
+  ...resto
+}: { icone: LucideIcon; ativo?: boolean; embreve?: boolean; aoClicar?: () => void; children: ReactNode } & ComponentProps<'button'>) {
   return (
     <button
       type="button"
-      disabled={props.embreve}
-      title={props.embreve ? 'Em breve' : undefined}
-      onClick={props.aoClicar}
+      disabled={embreve}
+      title={embreve ? 'Em breve' : undefined}
+      onClick={aoClicar}
+      aria-current={ativo ? 'page' : undefined}
+      {...resto}
       className={classes(
         'flex min-h-7 w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1 text-left disabled:cursor-default disabled:opacity-45',
-        props.ativo ? 'bg-white/15 font-semibold' : 'hover:bg-white/10',
+        ativo ? 'bg-white/15 font-semibold' : 'hover:bg-white/10',
       )}
     >
-      <props.icone className="size-4 shrink-0 text-destaque" aria-hidden />
-      <span className="min-w-0 flex-1">{props.children}</span>
+      <Icone className="size-4 shrink-0 text-destaque" aria-hidden />
+      <span className="min-w-0 flex-1">{children}</span>
     </button>
   );
 }

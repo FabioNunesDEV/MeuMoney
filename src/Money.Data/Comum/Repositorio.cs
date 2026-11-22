@@ -11,9 +11,12 @@ namespace Money.Data.Comum;
 /// <summary>Repositório de um tipo de entidade sobre o <see cref="MoneyDbContext"/>.</summary>
 /// <typeparam name="T">Tipo da entidade.</typeparam>
 /// <param name="dbContext">Contexto do escopo atual; grava as alterações rastreadas.</param>
-internal sealed class Repositorio<T>(MoneyDbContext dbContext) : IRepositorio<T>
+internal class Repositorio<T>(MoneyDbContext dbContext) : IRepositorio<T>
     where T : Entidade
 {
+    /// <summary>Obtém o contexto do escopo atual, para as consultas próprias dos repositórios derivados.</summary>
+    protected MoneyDbContext DbContext => dbContext;
+
     /// <inheritdoc />
     public async Task<IReadOnlyList<T>> ListarAsync(CancellationToken cancellationToken)
     {

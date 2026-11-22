@@ -180,4 +180,36 @@ public class ContaTestes
         conta.DefinirFavorita(true);
         Assert.True(conta.Favorita);
     }
+
+    /// <summary>Conta Dinheiro aberta aceita lançamento.</summary>
+    [Fact]
+    public void GarantirAceitaLancamento_DinheiroAberta_NaoLanca()
+    {
+        var conta = new Conta(TipoConta.Dinheiro, "Carteira", "BRL", 0m);
+
+        var erro = Record.Exception(conta.GarantirAceitaLancamento);
+
+        Assert.Null(erro);
+    }
+
+    /// <summary>Conta encerrada não aceita lançamento.</summary>
+    [Fact]
+    public void GarantirAceitaLancamento_Encerrada_LancaRegraNegocio()
+    {
+        var conta = new Conta(TipoConta.Dinheiro, "Carteira", "BRL", 0m);
+        conta.Encerrar();
+
+        Assert.Throws<RegraNegocioException>(conta.GarantirAceitaLancamento);
+    }
+
+    /// <summary>Por enquanto, só conta Dinheiro tem movimentação.</summary>
+    [Fact]
+    public void GarantirAceitaLancamento_OutroTipo_LancaRegraNegocio()
+    {
+        var conta = new Conta(TipoConta.Corrente, "Banco", "BRL", 0m);
+
+        var erro = Assert.Throws<RegraNegocioException>(conta.GarantirAceitaLancamento);
+
+        Assert.Equal("Por enquanto, só conta Dinheiro tem movimentação.", erro.Message);
+    }
 }

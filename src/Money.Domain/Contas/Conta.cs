@@ -146,6 +146,23 @@ public sealed class Conta : EntidadeNomeada
         this.Encerrada = true;
     }
 
+    /// <summary>
+    /// Recusa lançamento em conta encerrada ou de tipo que ainda não tem movimentação (por ora, só
+    /// Dinheiro tem).
+    /// </summary>
+    public void GarantirAceitaLancamento()
+    {
+        if (this.Encerrada)
+        {
+            throw new RegraNegocioException($"A conta '{this.Nome}' está encerrada e não aceita lançamentos.");
+        }
+
+        if (this.Tipo != TipoConta.Dinheiro)
+        {
+            throw new RegraNegocioException("Por enquanto, só conta Dinheiro tem movimentação.");
+        }
+    }
+
     /// <summary>Reabre uma conta encerrada.</summary>
     public void Reabrir()
     {

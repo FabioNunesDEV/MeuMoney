@@ -80,7 +80,7 @@ export function App() {
         <main className="min-h-0 min-w-0">
           {local.modulo === 'inicio' && <Inicio irParaContas={irParaContas} abrirConta={abrirConta} />}
           {local.modulo === 'contas' && !local.contaId && <Contas abrirConta={abrirConta} />}
-          {local.modulo === 'contas' && local.contaId && <ContaPagina id={local.contaId} voltar={irParaContas} />}
+          {local.modulo === 'contas' && local.contaId && <ContaPagina key={local.contaId} id={local.contaId} voltar={irParaContas} abrirConta={abrirConta} />}
         </main>
       </div>
       <Toaster position="bottom-center" theme={efetivo === 'escuro' ? 'dark' : 'light'} richColors closeButton />

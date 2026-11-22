@@ -5,6 +5,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Money.Services.Abstracoes;
 using Money.Services.Contas;
+using Money.Services.Lancamentos;
 using Money.Services.Tests.Fakes;
 
 namespace Money.Services.Tests;
@@ -18,6 +19,7 @@ public class InjecaoDependenciaTestes
     {
         var servicos = new ServiceCollection().AddMoneyServices();
         servicos.AddScoped(typeof(IRepositorio<>), typeof(RepositorioFake<>));
+        servicos.AddScoped<ILancamentoRepositorio, LancamentoRepositorioFake>();
         servicos.AddScoped<IUnidadeDeTrabalho, UnidadeDeTrabalhoFake>();
 
         using var provider = servicos.BuildServiceProvider(new ServiceProviderOptions
@@ -30,5 +32,6 @@ public class InjecaoDependenciaTestes
         Assert.NotNull(escopo.ServiceProvider.GetRequiredService<ContaServico>());
         Assert.NotNull(escopo.ServiceProvider.GetRequiredService<InstituicaoFinanceiraServico>());
         Assert.NotNull(escopo.ServiceProvider.GetRequiredService<GrupoContaServico>());
+        Assert.NotNull(escopo.ServiceProvider.GetRequiredService<LancamentoServico>());
     }
 }
