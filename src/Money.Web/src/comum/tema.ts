@@ -17,9 +17,33 @@ function resolver(tema: Tema): 'claro' | 'escuro' {
   return tema === 'sistema' ? (escuroNoSistema.matches ? 'escuro' : 'claro') : tema;
 }
 
+/** Canal de mensagens com a janela do aplicativo; só existe dentro do WebView2. */
+interface CanalJanela {
+  postMessage(mensagem: unknown): void;
+}
+
+// A barra de título é da janela (Windows), não da página: as cores da barra de módulos vão para lá.
+function avisarJanela(): void {
+  const canal = (window as { chrome?: { webview?: CanalJanela } }).chrome?.webview;
+  if (!canal) {
+    return;
+  }
+  const estilo = getComputedStyle(document.documentElement);
+  canal.postMessage({
+    tipo: 'tema',
+    corBarra: estilo.getPropertyValue('--barra').trim(),
+    corTexto: estilo.getPropertyValue('--sobre-barra').trim(),
+  });
+}
+
+function aplicar(efetivo: 'claro' | 'escuro'): void {
+  document.documentElement.dataset.tema = efetivo;
+  avisarJanela();
+}
+
 /** Aplica ao documento o tema guardado; chamado antes de desenhar a tela, para não piscar. */
 export function aplicarTemaGuardado(): void {
-  document.documentElement.dataset.tema = resolver(lerTema());
+  aplicar(resolver(lerTema()));
 }
 
 /**
@@ -31,14 +55,14 @@ export function useTema(): { tema: Tema; efetivo: 'claro' | 'escuro'; alternar: 
   const [efetivo, setEfetivo] = useState(() => resolver(tema));
 
   useEffect(() => {
-    const aplicar = () => {
+    const atualizar = () => {
       const novo = resolver(tema);
-      document.documentElement.dataset.tema = novo;
+      aplicar(novo);
       setEfetivo(novo);
     };
-    aplicar();
-    escuroNoSistema.addEventListener('change', aplicar);
-    return () => escuroNoSistema.removeEventListener('change', aplicar);
+    atualizar();
+    escuroNoSistema.addEventListener('change', atualizar);
+    return () => escuroNoSistema.removeEventListener('change', atualizar);
   }, [tema]);
 
   const alternar = () => {

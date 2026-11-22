@@ -5,6 +5,8 @@
   da página, painel de tarefas, faixas de seção) e conteúdo em superfície clara e neutra. O âmbar é o
   complementar do azul-petróleo e marca só a ação principal e o módulo atual. As cores de tipo de
   conta são dessaturadas. Verde e vermelho ficam reservados para valores.
+  --barra e --sobre-barra ficam em #rrggbb nos dois temas: comum/tema.ts as manda para a janela, que
+  pinta a barra de título do Windows com elas e não entende outro formato.
 */
 :root {
   color-scheme: light;
