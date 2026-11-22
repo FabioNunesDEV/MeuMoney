@@ -254,6 +254,68 @@ public class LancamentoServicoTestes
         Assert.Equal(gravacoes, this.unidade.Gravacoes);
     }
 
+    /// <summary>O gráfico tem um degrau no dia de cada lançamento e vai até o fim do período.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task ObterHistoricoAsync_Degraus_NosDiasDosLancamentos()
+    {
+        await this.CriarAsync(Gasto(this.carteira.Id, 30m) with { Data = new DateOnly(2026, 11, 10) });
+        await this.CriarAsync(Recebimento(this.carteira.Id, 50m) with { Data = new DateOnly(2026, 11, 15) });
+
+        var historico = await this.Servico.ObterHistoricoAsync(this.carteira.Id, new DateOnly(2026, 11, 1), new DateOnly(2026, 11, 20), CancellationToken.None);
+
+        Assert.True(historico.TemLancamentos);
+        Assert.Equal(
+            [(1, 100m), (10, 70m), (15, 120m), (20, 120m)],
+            historico.Pontos.Select(p => (p.Data.Day, p.Saldo)));
+        Assert.Equal((100m, 120m, 70m, 120m), (historico.SaldoInicioPeriodo, historico.Maior, historico.Menor, historico.Final));
+    }
+
+    /// <summary>Nulo não conta; lançamentos antes do período entram no saldo do início; vários no mesmo dia viram um ponto.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task ObterHistoricoAsync_NuloAnterioresEMesmoDia()
+    {
+        await this.CriarAsync(Recebimento(this.carteira.Id, 50m) with { Data = new DateOnly(2026, 5, 1) });
+        await this.CriarAsync(Gasto(this.carteira.Id, 10m) with { Data = new DateOnly(2026, 11, 10) });
+        await this.CriarAsync(Gasto(this.carteira.Id, 5m) with { Data = new DateOnly(2026, 11, 10) });
+        await this.CriarAsync(Gasto(this.carteira.Id, 40m) with { Data = new DateOnly(2026, 11, 12) });
+        await this.Servico.MarcarAsync(this.lancamentos.Itens[^1].Id, SituacaoLancamento.Nulo, CancellationToken.None);
+
+        var historico = await this.Servico.ObterHistoricoAsync(this.carteira.Id, new DateOnly(2026, 11, 1), new DateOnly(2026, 11, 22), CancellationToken.None);
+
+        Assert.Equal(
+            [(1, 150m), (10, 135m), (12, 135m), (22, 135m)],
+            historico.Pontos.Select(p => (p.Data.Day, p.Saldo)));
+    }
+
+    /// <summary>Lançamento futuro estende o fim; sem início, o período começa no primeiro lançamento.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task ObterHistoricoAsync_FuturoESemInicio()
+    {
+        await this.CriarAsync(Gasto(this.carteira.Id, 10m) with { Data = new DateOnly(2026, 10, 5) });
+        await this.CriarAsync(Gasto(this.carteira.Id, 20m) with { Data = new DateOnly(2026, 12, 2) });
+
+        var historico = await this.Servico.ObterHistoricoAsync(this.carteira.Id, null, new DateOnly(2026, 11, 22), CancellationToken.None);
+
+        Assert.Equal(new DateOnly(2026, 10, 5), historico.De);
+        Assert.Equal(new DateOnly(2026, 12, 2), historico.Ate);
+        Assert.Equal(100m, historico.SaldoInicioPeriodo);
+        Assert.Equal(70m, historico.Final);
+    }
+
+    /// <summary>Conta sem lançamento não tem gráfico.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task ObterHistoricoAsync_SemLancamentos_SemPontos()
+    {
+        var historico = await this.Servico.ObterHistoricoAsync(this.cofre.Id, null, new DateOnly(2026, 11, 22), CancellationToken.None);
+
+        Assert.False(historico.TemLancamentos);
+        Assert.Empty(historico.Pontos);
+    }
+
     private static SalvarLancamentoDto Gasto(Guid contaId, decimal valor) =>
         new(NaturezaLancamento.Gasto, contaId, null, Dia, valor, "Padaria", "Alimentação", "Pão", null, false);
 

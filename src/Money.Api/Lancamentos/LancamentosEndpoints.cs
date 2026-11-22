@@ -18,6 +18,8 @@ internal static class LancamentosEndpoints
     {
         api.MapGet("/contas/{id:guid}/lancamentos", (Guid id, LancamentoServico servico, CancellationToken ct) =>
             servico.ObterMovimentacaoAsync(id, ct));
+        api.MapGet("/contas/{id:guid}/historico", (Guid id, DateOnly? de, DateOnly ate, LancamentoServico servico, CancellationToken ct) =>
+            servico.ObterHistoricoAsync(id, de, ate, ct));
 
         var lancamentos = api.MapGroup("/lancamentos");
         lancamentos.MapGet("/opcoes", (Guid contaId, LancamentoServico servico, CancellationToken ct) =>

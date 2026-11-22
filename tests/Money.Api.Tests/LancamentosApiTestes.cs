@@ -90,6 +90,23 @@ public sealed class LancamentosApiTestes : TesteDeApi
         Assert.Empty(naCarteira.Lancamentos);
     }
 
+    /// <summary>O histórico devolve os pontos do degrau e o resumo do período.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task Historico_GastoERecebimento_DevolvePontosEResumo()
+    {
+        var carteira = await this.CriarContaAsync("Carteira", 100m);
+        await this.LancarAsync(Gasto(carteira, 30m) with { Data = new DateOnly(2026, 11, 10) });
+        await this.LancarAsync(Gasto(carteira, 50m) with { Natureza = NaturezaLancamento.Recebimento, Data = new DateOnly(2026, 11, 15) });
+
+        var historico = await this.Cliente.GetFromJsonAsync<HistoricoSaldoDto>(
+            $"/api/contas/{carteira}/historico?de=2026-11-01&ate=2026-11-20", Json);
+
+        Assert.NotNull(historico);
+        Assert.Equal([100m, 70m, 120m, 120m], historico.Pontos.Select(p => p.Saldo));
+        Assert.Equal((70m, 120m), (historico.Menor, historico.Final));
+    }
+
     private static SalvarLancamentoDto Gasto(Guid conta, decimal valor) =>
         new(NaturezaLancamento.Gasto, conta, null, Dia, valor, "Padaria", "Alimentação", null, null, false);
 

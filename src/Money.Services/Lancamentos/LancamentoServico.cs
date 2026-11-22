@@ -69,6 +69,57 @@ public sealed class LancamentoServico(
         return new MovimentacaoDto(contaId, conta.SaldoInicial, linhas, saldo);
     }
 
+    /// <summary>
+    /// Monta o saldo da conta no tempo: o saldo no início do período e ao fim de cada dia com
+    /// lançamento, o mesmo cálculo da Movimentação (nulos não contam).
+    /// </summary>
+    /// <param name="contaId">Id da conta.</param>
+    /// <param name="de">Primeiro dia do período; vazio começa no primeiro lançamento.</param>
+    /// <param name="ate">Último dia do período (hoje, para a tela); vai além se houver lançamento depois.</param>
+    /// <param name="cancellationToken">Cancela a consulta.</param>
+    /// <returns>Os pontos do gráfico e o resumo do período.</returns>
+    public async Task<HistoricoSaldoDto> ObterHistoricoAsync(Guid contaId, DateOnly? de, DateOnly ate, CancellationToken cancellationToken)
+    {
+        var conta = await this.ObterContaAsync(contaId, cancellationToken);
+        var daConta = await lancamentos.ListarDaContaAsync(contaId, cancellationToken);
+        if (daConta.Count == 0)
+        {
+            var inicio = de ?? ate;
+            return new HistoricoSaldoDto(contaId, inicio, ate, [], conta.SaldoInicial, conta.SaldoInicial, conta.SaldoInicial, conta.SaldoInicial, false);
+        }
+
+        var primeiroDia = de ?? daConta[0].Data;
+        var ultimoDia = daConta[^1].Data > ate ? daConta[^1].Data : ate;
+        if (primeiroDia > ultimoDia)
+        {
+            throw new RegraNegocioException("O início do período deve ser anterior ao fim.");
+        }
+
+        var saldo = conta.SaldoInicial + daConta.Where(l => l.Data < primeiroDia).Sum(l => l.EfeitoNoSaldo);
+        var pontos = new List<PontoSaldoDto> { new(primeiroDia, saldo) };
+        foreach (var dia in daConta.Where(l => l.Data >= primeiroDia && l.Data <= ultimoDia).GroupBy(l => l.Data))
+        {
+            saldo += dia.Sum(l => l.EfeitoNoSaldo);
+            pontos.Add(new PontoSaldoDto(dia.Key, saldo));
+        }
+
+        if (pontos[^1].Data < ultimoDia)
+        {
+            pontos.Add(new PontoSaldoDto(ultimoDia, saldo));
+        }
+
+        return new HistoricoSaldoDto(
+            contaId,
+            primeiroDia,
+            ultimoDia,
+            pontos,
+            pontos[0].Saldo,
+            pontos.Max(p => p.Saldo),
+            pontos.Min(p => p.Saldo),
+            saldo,
+            true);
+    }
+
     /// <summary>Monta as listas do formulário: favorecidos com sugestão, categorias e contas compatíveis.</summary>
     /// <param name="contaId">Conta da página, que define a moeda das contas compatíveis.</param>
     /// <param name="cancellationToken">Cancela a consulta.</param>

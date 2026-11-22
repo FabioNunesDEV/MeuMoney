@@ -253,7 +253,8 @@ As visões são Movimentação, Detalhes e Histórico:
   desativada, com a dica "Em breve", e a página abre em Detalhes.
 - **Detalhes:** nome, tipo, instituição, moeda, saldo inicial, saldo, grupo, conta caixa do
   investimento, favorita e situação.
-- **Histórico:** MUST aparecer desativado, com a dica "Em breve".
+- **Histórico:** na conta Dinheiro, o gráfico do saldo no tempo; nos demais tipos, MUST aparecer
+  desativado, com a dica "Em breve".
 
 #### Scenario: Abrir a conta
 - **WHEN** o usuário dá duplo clique numa conta Dinheiro do gerenciador
@@ -261,7 +262,7 @@ As visões são Movimentação, Detalhes e Histórico:
 
 #### Scenario: Abrir conta de outro tipo
 - **WHEN** o usuário dá duplo clique numa conta Corrente
-- **THEN** a página abre em Detalhes, com a Movimentação desativada e a dica "Em breve"
+- **THEN** a página abre em Detalhes, com a Movimentação e o Histórico desativados e a dica "Em breve"
 
 #### Scenario: Ir para outra conta pelo menu Contas
 - **WHEN** o usuário está na página da "Carteira" e escolhe "Cofre" no menu "Contas"
@@ -270,6 +271,10 @@ As visões são Movimentação, Detalhes e Histórico:
 #### Scenario: Voltar ao gerenciador
 - **WHEN** o usuário escolhe "Gerenciador de contas" na página da conta
 - **THEN** o gerenciador de contas é exibido
+
+#### Scenario: Histórico da conta Dinheiro
+- **WHEN** o usuário escolhe Histórico na página de uma conta Dinheiro
+- **THEN** a página mostra o gráfico do saldo da conta no tempo
 
 ### Requirement: Ações pelo teclado e menu de contexto
 Criar conta SHALL estar disponível pelo atalho Ctrl+N no gerenciador. Editar, favoritar e
