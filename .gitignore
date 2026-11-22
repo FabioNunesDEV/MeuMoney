@@ -438,5 +438,8 @@ imagens_tela/
 # Capturas do navegador de teste (Playwright)
 .playwright-mcp/
 
+# Resultados dos testes de tela (Playwright): pasta de cada teste e capturas de falha
+test-results/
+
 # Instalação do Money 99 usada como referência, não versionar
 Money99/

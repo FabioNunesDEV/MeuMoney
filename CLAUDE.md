@@ -21,7 +21,7 @@ de exemplo ou mensagens de commit.
 | Ferramentas web | Node 24 e npm; o `dotnet build` chama `npm run build` sozinho |
 | Persistência | **EF Core 10**, sem amarrar a um provedor |
 | Banco | **SQLite**, em `%LOCALAPPDATA%\MeuMoney\meumoney.db` |
-| Testes | **xUnit 2.9** |
+| Testes | **xUnit 2.9**; telas com **Playwright** (`@playwright/test`) pela janela real |
 | Planejamento | **OpenSpec** (fluxo spec-driven, artefatos em pt-BR) |
 | Solução | `MeuMoney.slnx`; pacotes com versão central em `Directory.Packages.props` |
 | IDE | Visual Studio 2026 (o VS 2022 não carrega projetos .NET 10) |
@@ -34,6 +34,7 @@ dotnet test MeuMoney.slnx
 dotnet run --project src/Money.Desktop
 npm run build --prefix src/Money.Web      # verifica tipos (tsc) e compila as telas
 npm run dev --prefix src/Money.Web        # telas com recarga; abrir o aplicativo com Porta=5199
+npm run testar --prefix src/Money.Web     # testes de tela pela janela real (compilar antes)
 dotnet ef migrations add <Nome> --project src/Money.Data.Sqlite --startup-project src/Money.Data.Sqlite
 openspec list
 ```
@@ -49,14 +50,14 @@ A saída do SDK vem em português nesta máquina: decidir por código de saída,
 
 Pacotes npm aprovados (`src/Money.Web/package.json`): `react`, `react-dom`, `radix-ui`, `lucide-react`,
 `sonner`, `tailwindcss`, `@tailwindcss/vite`, `vite`, `@vitejs/plugin-react`, `typescript`,
-`@types/react`, `@types/react-dom`. Para gráficos, quando vierem, o previsto é `recharts`.
+`@types/react`, `@types/react-dom`, `@playwright/test`. Para gráficos, quando vierem, o previsto é `recharts`.
 
 JSON com o `System.Text.Json` do próprio .NET; não usar `Newtonsoft.Json`.
 
 **Pacote fora desta lista: explicar o motivo, o que ele fará e o custo, e esperar autorização.**
 Aprovado, entra nesta lista e no `Directory.Packages.props` (versão nunca no `.csproj`) ou no
 `package.json`. Ainda sem decisão, a resolver no módulo que precisar: asserções/mocks de teste,
-testes das telas, validação de entrada, importação de extrato (OFX/CSV).
+validação de entrada, importação de extrato (OFX/CSV).
 
 ## Arquitetura
 
@@ -137,7 +138,8 @@ falam com a API, por HTTP.
 - Um tipo público por arquivo, com o nome do arquivo igual ao do tipo.
 - `sealed` em classe que não foi feita para herança; `internal` no que não sai do projeto.
 - Construtor primário para injeção de dependência.
-- Build **sem avisos**. Aviso de nullable se corrige, não se suprime com `!`.
+- Build **sem avisos**, garantido pelo `TreatWarningsAsErrors` no `Directory.Build.props`: aviso
+  quebra a compilação. Aviso de nullable se corrige, não se suprime com `!`.
 
 ### Comentários
 
@@ -154,6 +156,9 @@ falam com a API, por HTTP.
 
 - **Serilog** grava só **falhas**, só em **arquivo texto** (`Serilog.Sinks.File`): nível mínimo `Error`,
   valendo também para o que o framework registra (Host, EF Core). Nada de console ou outro destino.
+  Um arquivo por dia em `<PastaDados>\logs\` (padrão `%LOCALAPPDATA%\MeuMoney\logs\`), guardando
+  30 dias. Configurado no `App` do Desktop, o único projeto que referencia o Serilog; os demais usam
+  `ILogger<T>`.
 - No código, log só com `LogError` ou `LogCritical`, levando a exceção. Notificação de rotina
   (`LogInformation`, `LogDebug`, `LogTrace`, `LogWarning`) não se registra.
 
@@ -178,7 +183,8 @@ falam com a API, por HTTP.
   mostra a `mensagem` devolvida pela API.
 - Usar os componentes de `comum/ui.tsx` e as peças do Radix antes de criar componente novo.
 - Comentário `/** ... */` curto em componente e função exportados; dentro, só o porquê.
-- A janela WPF (`JanelaPrincipal`) só hospeda o WebView2: nada de lógica nem de tela em XAML.
+- A janela WPF (`JanelaPrincipal`) só hospeda o WebView2 e pinta a barra de título com as cores que
+  as telas mandam (`comum/tema.ts`): nada de outra lógica nem de tela em XAML.
 - Textos exibidos em português, com acento.
 
 ### Testes
@@ -186,7 +192,11 @@ falam com a API, por HTTP.
 - Código novo de Domain e Services tem teste unitário. Persistência tem teste em `Money.Data.Tests`
   com SQLite em arquivo temporário (ver `ProvedorSqliteTestes`). Rota nova da API tem teste em
   `Money.Api.Tests`, de ponta a ponta (HTTP real em porta livre + SQLite temporário).
-- As telas ainda não têm teste automatizado: valem a verificação de tipos e a conferência por captura.
+- Fluxo de tela tem teste em `src/Money.Web/testes/`, com Playwright **pela janela real**: a fixture
+  `janela` (`testes/janela.ts`) abre o `Money.Desktop.exe` compilado com banco, log e dados do
+  WebView2 na pasta do teste, se liga ao WebView2 pela porta de depuração e fecha tudo no fim. A
+  janela aparece na tela: não usar o mouse enquanto os testes rodam. Localizadores por papel e
+  rótulo (`getByRole`, `getByLabel`). A conferência por captura continua valendo para o visual.
 - Nome do teste em português: `Metodo_Cenario_ResultadoEsperado`.
 - Teste nunca toca o banco real em `%LOCALAPPDATA%\MeuMoney`.
 
@@ -248,7 +258,8 @@ Tudo isso é o componente `Pagina` de `comum/ui.tsx`; página nova não monta o 
 - A janela tem largura mínima de 720, sem rolagem horizontal: o painel de tarefas some abaixo de
   1000 e as barras quebram em linhas.
 - **Tela nova se confere por captura antes de entregar**: abrir o aplicativo com banco temporário
-  (`Database__ConnectionString` e `Porta=5199` no ambiente) e olhar a janela e as interações.
+  (`Database__ConnectionString`, `PastaDados` e `Porta=5199` no ambiente) e olhar a janela e as
+  interações.
 
 ## Regras de trabalho para a IA
 
@@ -277,7 +288,8 @@ Tudo isso é o componente `Pagina` de `comum/ui.tsx`; página nova não monta o 
 ### Validação
 
 - Antes de dar uma tarefa por concluída: `dotnet build` sem avisos (inclui a verificação de tipos e
-  a compilação das telas) e `dotnet test` passando.
+  a compilação das telas), `dotnet test` passando e `npm run testar --prefix src/Money.Web`
+  passando (depois do build, que gera o executável testado).
 - Validação visual e de uso do aplicativo é do usuário: a IA entrega o build pronto, diz o que
   conferir e espera o retorno.
 
