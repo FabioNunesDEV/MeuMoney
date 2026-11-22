@@ -22,9 +22,17 @@ namespace Money.Data.Sqlite.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Abreviacao")
+                        .HasMaxLength(20)
+                        .HasColumnType("TEXT");
+
                     b.Property<string>("CodigoMoeda")
                         .IsRequired()
                         .HasMaxLength(3)
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Comentario")
+                        .HasMaxLength(1000)
                         .HasColumnType("TEXT");
 
                     b.Property<Guid?>("ContaCaixaId")
@@ -47,7 +55,15 @@ namespace Money.Data.Sqlite.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("NumeroConta")
+                        .HasMaxLength(50)
+                        .HasColumnType("TEXT");
+
                     b.Property<decimal>("SaldoInicial")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("TEXT");
+
+                    b.Property<decimal?>("SaldoMinimo")
                         .HasPrecision(18, 2)
                         .HasColumnType("TEXT");
 

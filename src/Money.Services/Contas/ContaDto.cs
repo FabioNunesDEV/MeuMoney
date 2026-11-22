@@ -22,6 +22,10 @@ namespace Money.Services.Contas;
 /// <param name="NomeContaCaixa">Nome da conta caixa vinculada, se houver.</param>
 /// <param name="Favorita">Indica se a conta é favorita.</param>
 /// <param name="Encerrada">Indica se a conta está encerrada.</param>
+/// <param name="NumeroConta">Número da conta, se informado.</param>
+/// <param name="Abreviacao">Nome curto da conta, se informado.</param>
+/// <param name="Comentario">Comentário livre, se informado.</param>
+/// <param name="SaldoMinimo">Saldo mínimo, se informado.</param>
 public sealed record ContaDto(
     Guid Id,
     string Nome,
@@ -37,4 +41,8 @@ public sealed record ContaDto(
     Guid? ContaCaixaId,
     string? NomeContaCaixa,
     bool Favorita,
-    bool Encerrada);
+    bool Encerrada,
+    string? NumeroConta,
+    string? Abreviacao,
+    string? Comentario,
+    decimal? SaldoMinimo);

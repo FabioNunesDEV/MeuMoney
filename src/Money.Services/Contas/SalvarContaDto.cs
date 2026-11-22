@@ -30,6 +30,18 @@ public sealed record SalvarContaDto
     /// <summary>Obtém ou inicializa um valor que indica se a conta é favorita.</summary>
     public bool Favorita { get; init; }
 
+    /// <summary>Obtém ou inicializa o número da conta, opcional.</summary>
+    public string? NumeroConta { get; init; }
+
+    /// <summary>Obtém ou inicializa o nome curto da conta, opcional.</summary>
+    public string? Abreviacao { get; init; }
+
+    /// <summary>Obtém ou inicializa o comentário livre, opcional.</summary>
+    public string? Comentario { get; init; }
+
+    /// <summary>Obtém ou inicializa o saldo mínimo; só nos tipos que o têm.</summary>
+    public decimal? SaldoMinimo { get; init; }
+
     /// <summary>Obtém ou inicializa o modo da conta caixa; só vale para investimento.</summary>
     public ModoContaCaixa ModoCaixa { get; init; }
 

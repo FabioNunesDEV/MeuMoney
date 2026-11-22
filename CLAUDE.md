@@ -232,6 +232,7 @@ Tudo isso é o componente `Pagina` de `comum/ui.tsx`; página nova não monta o 
 | Home page com faixas de título | Início com seções em faixa: contas favoritas (nome como link e saldo final), saldos, onde está o dinheiro |
 | Gerenciador de contas com ícones grandes | Ícones grandes por conta, agrupados em seções; a visão em lista é a alternativa; saldos no rodapé |
 | Clique na conta abre a conta | Duplo clique ou Enter abre a página da conta, com Movimentação, Detalhes e Histórico no painel e o menu "Contas" para ir a outra |
+| Detalhes da conta com os campos do cadastro | Detalhes: o cadastro em formulário na página, com Desfazer e Salvar; o Editar da página leva a ele (no gerenciador, o Editar abre o pop-up com os mesmos campos) |
 | Registro com formulário embaixo (Gasto, Recebimento, Transferência) | Movimentação: grade com saldo linha a linha e, embaixo, o formulário em abas com Novo, Editar, Inserir e Cancelar |
 | Botões no rodapé (Nova conta...) | Comandos na faixa de título e no painel de tarefas; ações do item no menu de contexto e no botão "…" |
 | Assistente com várias janelas | Um pop-up com passos curtos (Voltar, Avançar, Concluir) |
@@ -261,8 +262,8 @@ Tudo isso é o componente `Pagina` de `comum/ui.tsx`; página nova não monta o 
   dado inventado.
 - **Estado vazio** com ícone, mensagem e ação ("Nenhuma conta cadastrada" + "Criar conta").
 - **Retorno ao usuário**: aviso passageiro (Sonner) para ação concluída ou recusada; pop-up de
-  confirmação (`Confirmacao`) para exclusão de cadastro; erro de formulário dentro do próprio pop-up
-  (`AvisoErro`). `MessageBox` do Windows só no erro fatal de inicialização.
+  confirmação (`Confirmacao`) para exclusão de cadastro; erro de formulário dentro do próprio formulário
+  (`AvisoErro`), no pop-up ou na página. `MessageBox` do Windows só no erro fatal de inicialização.
 - **Teclado**: toda ação alcançável sem mouse; item de lista focável, Enter abre, tecla de menu abre
   o menu de contexto; Ctrl+N para novo; botão só com ícone tem `aria-label`.
 - A janela tem largura mínima de 720, sem rolagem horizontal: o painel de tarefas some abaixo de

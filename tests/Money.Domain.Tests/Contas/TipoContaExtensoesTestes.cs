@@ -40,4 +40,20 @@ public class TipoContaExtensoesTestes
     {
         Assert.Equal(esperado, tipo.PodeSerCaixa());
     }
+
+    /// <summary>Só corrente, poupança e dinheiro têm saldo mínimo.</summary>
+    /// <param name="tipo">Tipo testado.</param>
+    /// <param name="esperado">Resultado esperado.</param>
+    [Theory]
+    [InlineData(TipoConta.Corrente, true)]
+    [InlineData(TipoConta.Poupanca, true)]
+    [InlineData(TipoConta.Dinheiro, true)]
+    [InlineData(TipoConta.CartaoCredito, false)]
+    [InlineData(TipoConta.Investimento, false)]
+    [InlineData(TipoConta.Ativo, false)]
+    [InlineData(TipoConta.Passivo, false)]
+    public void TemSaldoMinimo_PorTipo_DevolveEsperado(TipoConta tipo, bool esperado)
+    {
+        Assert.Equal(esperado, tipo.TemSaldoMinimo());
+    }
 }

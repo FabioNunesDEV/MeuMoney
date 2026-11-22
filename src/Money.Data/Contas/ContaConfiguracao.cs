@@ -24,6 +24,10 @@ internal sealed class ContaConfiguracao : IEntityTypeConfiguration<Conta>
         builder.Property(c => c.Tipo).HasConversion<string>().HasMaxLength(20);
         builder.Property(c => c.CodigoMoeda).IsRequired().HasMaxLength(3);
         builder.Property(c => c.SaldoInicial).HasPrecision(18, 2);
+        builder.Property(c => c.NumeroConta).HasMaxLength(Conta.TamanhoMaximoNumero);
+        builder.Property(c => c.Abreviacao).HasMaxLength(Conta.TamanhoMaximoAbreviacao);
+        builder.Property(c => c.Comentario).HasMaxLength(Conta.TamanhoMaximoComentario);
+        builder.Property(c => c.SaldoMinimo).HasPrecision(18, 2);
 
         builder.HasOne<InstituicaoFinanceira>()
             .WithMany()

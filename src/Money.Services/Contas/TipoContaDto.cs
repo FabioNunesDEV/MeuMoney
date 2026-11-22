@@ -10,4 +10,8 @@ namespace Money.Services.Contas;
 /// <param name="Tipo">Tipo da conta.</param>
 /// <param name="Nome">Nome exibido.</param>
 /// <param name="Descricao">Descrição curta do uso do tipo.</param>
-public sealed record TipoContaDto(TipoConta Tipo, string Nome, string Descricao);
+public sealed record TipoContaDto(TipoConta Tipo, string Nome, string Descricao)
+{
+    /// <summary>Obtém um valor que indica se o tipo tem saldo mínimo, para a tela mostrar o campo.</summary>
+    public bool TemSaldoMinimo => this.Tipo.TemSaldoMinimo();
+}

@@ -141,6 +141,40 @@ export function CamposNome({ f, focar }: PropsCampos) {
   );
 }
 
+/** Dados complementares, todos opcionais: número, abreviação, saldo mínimo (nos tipos que o têm) e comentário. */
+export function CamposComplementares({ f }: PropsCampos) {
+  return (
+    <div className="grid gap-3">
+      <div className="grid grid-cols-2 gap-3">
+        <Campo rotulo="Número da conta">
+          <input className={estiloEntrada} value={f.numeroConta} onChange={(e) => f.setNumeroConta(e.target.value)} />
+        </Campo>
+        <Campo rotulo="Abreviação">
+          <input className={estiloEntrada} value={f.abreviacao} onChange={(e) => f.setAbreviacao(e.target.value)} />
+        </Campo>
+        {f.infoTipo?.temSaldoMinimo && (
+          <Campo rotulo="Saldo mínimo">
+            <input
+              className={classes(estiloEntrada, 'text-right tabular-nums')}
+              inputMode="decimal"
+              value={f.saldoMinimo}
+              placeholder="Sem saldo mínimo"
+              onChange={(e) => f.setSaldoMinimo(e.target.value)}
+            />
+          </Campo>
+        )}
+      </div>
+      <Campo rotulo="Comentário">
+        <textarea
+          className={classes(estiloEntrada, 'h-20 resize-y py-1.5')}
+          value={f.comentario}
+          onChange={(e) => f.setComentario(e.target.value)}
+        />
+      </Campo>
+    </div>
+  );
+}
+
 /** Moeda e saldo inicial; no Investimento, a conta caixa no lugar do saldo. */
 export function CamposSaldo({ f, focar }: PropsCampos) {
   const ehInvestimento = f.tipo === 'Investimento';

@@ -22,4 +22,12 @@ public static class TipoContaExtensoes
     {
         return tipo is TipoConta.Corrente or TipoConta.Poupanca or TipoConta.Dinheiro;
     }
+
+    /// <summary>Indica se o tipo tem saldo mínimo no cadastro.</summary>
+    /// <param name="tipo">Tipo da conta.</param>
+    /// <returns><see langword="true"/> para Corrente, Poupança e Dinheiro.</returns>
+    public static bool TemSaldoMinimo(this TipoConta tipo)
+    {
+        return tipo is TipoConta.Corrente or TipoConta.Poupanca or TipoConta.Dinheiro;
+    }
 }
