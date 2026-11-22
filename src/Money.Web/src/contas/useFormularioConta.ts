@@ -25,6 +25,12 @@ export function useFormularioConta(original: Conta | null) {
   const [caixaId, setCaixaId] = useState(original?.contaCaixaId ?? '');
   const [nomeCaixa, setNomeCaixa] = useState('');
   const [saldoCaixa, setSaldoCaixa] = useState('');
+  const [numeroConta, setNumeroConta] = useState(original?.numeroConta ?? '');
+  const [abreviacao, setAbreviacao] = useState(original?.abreviacao ?? '');
+  const [comentario, setComentario] = useState(original?.comentario ?? '');
+  const [saldoMinimo, setSaldoMinimo] = useState(
+    original?.saldoMinimo != null ? valorParaTexto(original.saldoMinimo, original.moeda.casasDecimais) : '',
+  );
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
   const [caixas] = useDados(() => api.caixas(moeda), [moeda]);
@@ -33,6 +39,26 @@ export function useFormularioConta(original: Conta | null) {
   const nomeDigitado = useRef(original !== null);
   const infoTipo = opcoes?.tipos.find((t) => t.tipo === tipo);
   const nomeInstituicao = mantida ? instituicao.trim() : '';
+
+  // Tudo o que o usuário pode mudar, como digitado: comparado com o primeiro valor, diz se há alteração.
+  const digitado = JSON.stringify([
+    nome,
+    mantida,
+    instituicao,
+    grupo,
+    moeda,
+    saldo,
+    favorita,
+    modoCaixa,
+    caixaId,
+    nomeCaixa,
+    saldoCaixa,
+    numeroConta,
+    abreviacao,
+    comentario,
+    saldoMinimo,
+  ]);
+  const [digitadoInicial] = useState(digitado);
 
   useEffect(() => {
     if (!nomeDigitado.current && nomeInstituicao && infoTipo) {
@@ -50,7 +76,10 @@ export function useFormularioConta(original: Conta | null) {
     const ehInvestimento = tipo === 'Investimento';
     const valorSaldo = lerValor(saldo);
     const valorCaixa = lerValor(saldoCaixa);
-    if (valorSaldo === null || valorCaixa === null) {
+    // Saldo mínimo vazio é "sem saldo mínimo", não zero; em tipo sem saldo mínimo, nunca vai.
+    const textoMinimo = infoTipo?.temSaldoMinimo ? saldoMinimo.trim() : '';
+    const valorMinimo = textoMinimo === '' ? null : lerValor(textoMinimo);
+    if (valorSaldo === null || valorCaixa === null || (textoMinimo !== '' && valorMinimo === null)) {
       setErro('Valor inválido. Use o formato 1.234,56.');
       return null;
     }
@@ -67,6 +96,10 @@ export function useFormularioConta(original: Conta | null) {
       contaCaixaId: caixaId || null,
       nomeCaixaNova: nomeCaixa || null,
       saldoCaixaNova: valorCaixa,
+      numeroConta: numeroConta || null,
+      abreviacao: abreviacao || null,
+      comentario: comentario || null,
+      saldoMinimo: valorMinimo,
     };
 
     setSalvando(true);
@@ -116,6 +149,15 @@ export function useFormularioConta(original: Conta | null) {
     setNomeCaixa,
     saldoCaixa,
     setSaldoCaixa,
+    numeroConta,
+    setNumeroConta,
+    abreviacao,
+    setAbreviacao,
+    comentario,
+    setComentario,
+    saldoMinimo,
+    setSaldoMinimo,
+    alterado: digitado !== digitadoInicial,
     erro,
     setErro,
     salvando,

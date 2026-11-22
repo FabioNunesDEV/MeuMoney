@@ -212,4 +212,84 @@ public class ContaTestes
 
         Assert.Equal("Por enquanto, só conta Dinheiro tem movimentação.", erro.Message);
     }
+
+    /// <summary>Os complementos ficam sem os espaços das pontas; vazio ou só espaços fica sem valor.</summary>
+    [Fact]
+    public void DefinirComplementos_EspacosEVazio_LimpaEGuardaNulo()
+    {
+        var conta = new Conta(TipoConta.Dinheiro, "Carteira", "BRL", 0m);
+
+        conta.DefinirComplementos(" 1234-5 ", "   ", string.Empty);
+
+        Assert.Equal("1234-5", conta.NumeroConta);
+        Assert.Null(conta.Abreviacao);
+        Assert.Null(conta.Comentario);
+    }
+
+    /// <summary>Texto acima do limite é recusado com a mensagem do limite, sem gravar nada.</summary>
+    /// <param name="campo">Campo que passa do limite: 0 número, 1 abreviação, 2 comentário.</param>
+    /// <param name="mensagem">Mensagem esperada.</param>
+    [Theory]
+    [InlineData(0, "O número da conta deve ter no máximo 50 caracteres.")]
+    [InlineData(1, "A abreviação deve ter no máximo 20 caracteres.")]
+    [InlineData(2, "O comentário deve ter no máximo 1000 caracteres.")]
+    public void DefinirComplementos_TextoLongo_LancaRegraNegocio(int campo, string mensagem)
+    {
+        var conta = new Conta(TipoConta.Dinheiro, "Carteira", "BRL", 0m);
+        conta.DefinirComplementos("1", "C", "Antes");
+        var limites = new[] { Conta.TamanhoMaximoNumero, Conta.TamanhoMaximoAbreviacao, Conta.TamanhoMaximoComentario };
+        var textos = new[] { "1", "C", "Depois" };
+        textos[campo] = new string('x', limites[campo] + 1);
+
+        var erro = Assert.Throws<RegraNegocioException>(() => conta.DefinirComplementos(textos[0], textos[1], textos[2]));
+
+        Assert.Equal(mensagem, erro.Message);
+        Assert.Equal("Antes", conta.Comentario);
+    }
+
+    /// <summary>Texto no limite exato é aceito.</summary>
+    [Fact]
+    public void DefinirComplementos_NoLimite_Aceita()
+    {
+        var conta = new Conta(TipoConta.Dinheiro, "Carteira", "BRL", 0m);
+
+        conta.DefinirComplementos(new string('n', 50), new string('a', 20), new string('c', 1000));
+
+        Assert.Equal(20, conta.Abreviacao?.Length);
+    }
+
+    /// <summary>Saldo mínimo negativo é aceito na corrente, como o limite do cheque especial.</summary>
+    [Fact]
+    public void DefinirSaldoMinimo_NegativoNaCorrente_Aceita()
+    {
+        var conta = new Conta(TipoConta.Corrente, "Banco", "BRL", 0m);
+
+        conta.DefinirSaldoMinimo(-500m);
+
+        Assert.Equal(-500m, conta.SaldoMinimo);
+    }
+
+    /// <summary>Tipo sem saldo mínimo recusa valor, mas aceita nulo.</summary>
+    [Fact]
+    public void DefinirSaldoMinimo_CartaoCredito_LancaRegraNegocio()
+    {
+        var conta = new Conta(TipoConta.CartaoCredito, "Cartão", "BRL", 0m);
+
+        var erro = Assert.Throws<RegraNegocioException>(() => conta.DefinirSaldoMinimo(50m));
+        conta.DefinirSaldoMinimo(null);
+
+        Assert.Equal("Este tipo de conta não tem saldo mínimo.", erro.Message);
+        Assert.Null(conta.SaldoMinimo);
+    }
+
+    /// <summary>Saldo mínimo com mais casas que a moeda é recusado.</summary>
+    [Fact]
+    public void DefinirSaldoMinimo_CasasDemais_LancaRegraNegocio()
+    {
+        var conta = new Conta(TipoConta.Dinheiro, "Carteira", "BRL", 0m);
+
+        var erro = Assert.Throws<RegraNegocioException>(() => conta.DefinirSaldoMinimo(10.005m));
+
+        Assert.StartsWith("O valor admite no máximo 2 casas decimais", erro.Message, StringComparison.Ordinal);
+    }
 }

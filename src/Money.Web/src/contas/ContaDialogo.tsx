@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Conta } from '../api';
 import { AvisoErro, Botao, Popup } from '../comum/ui';
-import { CamposInstituicao, CamposNome, CamposSaldo, CamposTipo } from './CamposConta';
+import { CamposComplementares, CamposInstituicao, CamposNome, CamposSaldo, CamposTipo } from './CamposConta';
 import { useFormularioConta } from './useFormularioConta';
 
 function Grupo({ titulo, children }: { titulo: string; children: ReactNode }) {
@@ -54,6 +54,9 @@ export function ContaDialogo(props: { conta: Conta; aoFechar: () => void; aoSalv
         </Grupo>
         <CamposNome f={f} />
         <CamposSaldo f={f} />
+        <Grupo titulo="Complementos">
+          <CamposComplementares f={f} />
+        </Grupo>
         {/* Permite salvar com Enter em qualquer campo. */}
         <button type="submit" hidden />
       </form>

@@ -82,6 +82,38 @@ public sealed class ContasApiTestes : TesteDeApi
         Assert.True(depois?.ExistemContas);
     }
 
+    /// <summary>
+    /// Alterar a conta grava número, abreviação, comentário e saldo mínimo, e a leitura os devolve; saldo
+    /// mínimo em cartão de crédito volta como 400 com a mensagem.
+    /// </summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task AlterarConta_Complementos_GravaEDevolve()
+    {
+        var criada = await (await this.Cliente.PostAsJsonAsync("/api/contas", Dados("Conta"), Json))
+            .Content.ReadFromJsonAsync<ContaDto>(Json);
+        Assert.NotNull(criada);
+        var alteracao = Dados("Conta") with { NumeroConta = "1234-5", Abreviacao = "Cc", Comentario = "Salário", SaldoMinimo = -500m };
+
+        (await this.Cliente.PutAsJsonAsync($"/api/contas/{criada.Id}", alteracao, Json)).EnsureSuccessStatusCode();
+        var lida = await this.Cliente.GetFromJsonAsync<ContaDto>($"/api/contas/{criada.Id}", Json);
+
+        Assert.NotNull(lida);
+        Assert.Equal("1234-5", lida.NumeroConta);
+        Assert.Equal("Cc", lida.Abreviacao);
+        Assert.Equal("Salário", lida.Comentario);
+        Assert.Equal(-500m, lida.SaldoMinimo);
+
+        var cartao = new SalvarContaDto { Tipo = TipoConta.CartaoCredito, Nome = "Cartão", SaldoMinimo = 100m };
+        var recusa = await this.Cliente.PostAsJsonAsync("/api/contas", cartao, Json);
+        Assert.Equal(HttpStatusCode.BadRequest, recusa.StatusCode);
+        Assert.Equal("Este tipo de conta não tem saldo mínimo.", (await recusa.Content.ReadFromJsonAsync<ErroDto>(Json))?.Mensagem);
+
+        var opcoes = await this.Cliente.GetStringAsync("/api/contas/opcoes");
+        Assert.Contains("\"temSaldoMinimo\":true", opcoes);
+        Assert.Contains("\"temSaldoMinimo\":false", opcoes);
+    }
+
     /// <summary>Instituição criada com a conta é listada, renomeada e não excluída enquanto em uso.</summary>
     /// <returns>Tarefa do teste.</returns>
     [Fact]

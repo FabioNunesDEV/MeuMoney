@@ -349,6 +349,67 @@ public class ContaServicoTestes
         Assert.Equal("A moeda não muda depois do primeiro lançamento da conta.", erro.Message);
     }
 
+    /// <summary>Só corrente, poupança e dinheiro informam que têm saldo mínimo.</summary>
+    [Fact]
+    public void ListarTipos_InformaQuemTemSaldoMinimo()
+    {
+        var comSaldoMinimo = this.Servico.ListarTipos().Where(t => t.TemSaldoMinimo).Select(t => t.Tipo);
+
+        Assert.Equal([TipoConta.Corrente, TipoConta.Poupanca, TipoConta.Dinheiro], comSaldoMinimo);
+    }
+
+    /// <summary>Criar e alterar gravam número, abreviação, comentário e saldo mínimo.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task CriarEAtualizarAsync_Complementos_GravaEDevolve()
+    {
+        var criada = await this.Servico.CriarAsync(
+            Dados("Carteira", TipoConta.Dinheiro) with { NumeroConta = " 1234-5 ", Abreviacao = "Cart", SaldoMinimo = 50m },
+            CancellationToken.None);
+
+        var alterada = await this.Servico.AtualizarAsync(
+            criada.Id,
+            Dados("Carteira", TipoConta.Dinheiro) with { Comentario = "Uso diário", SaldoMinimo = -10.5m },
+            CancellationToken.None);
+
+        Assert.Equal("1234-5", criada.NumeroConta);
+        Assert.Equal("Cart", criada.Abreviacao);
+        Assert.Equal(50m, criada.SaldoMinimo);
+        Assert.Null(alterada.NumeroConta);
+        Assert.Null(alterada.Abreviacao);
+        Assert.Equal("Uso diário", alterada.Comentario);
+        Assert.Equal(-10.5m, alterada.SaldoMinimo);
+    }
+
+    /// <summary>Ao trocar a moeda, o saldo mínimo é validado nas casas da moeda nova.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task AtualizarAsync_TrocaMoedaComSaldoMinimoIncompativel_LancaRegraNegocio()
+    {
+        var criada = await this.Servico.CriarAsync(Dados("Carteira", TipoConta.Dinheiro) with { SaldoMinimo = 10.5m }, CancellationToken.None);
+
+        var erro = await Assert.ThrowsAsync<RegraNegocioException>(
+            () => this.Servico.AtualizarAsync(
+                criada.Id,
+                Dados("Carteira", TipoConta.Dinheiro, "JPY") with { SaldoMinimo = 10.5m },
+                CancellationToken.None));
+
+        Assert.Equal("O valor admite no máximo 0 casas decimais em Iene japonês.", erro.Message);
+        Assert.Equal(1, this.unidade.Gravacoes);
+    }
+
+    /// <summary>Saldo mínimo em tipo que não o tem é recusado.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task CriarAsync_SaldoMinimoEmCartao_LancaRegraNegocio()
+    {
+        var erro = await Assert.ThrowsAsync<RegraNegocioException>(
+            () => this.Servico.CriarAsync(Dados("Cartão", TipoConta.CartaoCredito) with { SaldoMinimo = 100m }, CancellationToken.None));
+
+        Assert.Equal("Este tipo de conta não tem saldo mínimo.", erro.Message);
+        Assert.Empty(this.contas.Itens);
+    }
+
     private static DadosLancamento DadosLancamento(decimal valor) =>
         new(new DateOnly(2026, 11, 22), valor, Guid.CreateVersion7(), Guid.CreateVersion7(), null, null);
 

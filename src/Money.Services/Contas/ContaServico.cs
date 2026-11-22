@@ -206,6 +206,10 @@ public sealed class ContaServico(
         conta.DefinirGrupo(await Nomes.ResolverPorNomeAsync(
             grupos, dados.NomeGrupo, n => new GrupoConta(n), cancellationToken));
         conta.DefinirFavorita(dados.Favorita);
+        conta.DefinirComplementos(dados.NumeroConta, dados.Abreviacao, dados.Comentario);
+
+        // Depois da moeda, que já foi definida: as casas decimais são as da moeda nova.
+        conta.DefinirSaldoMinimo(dados.SaldoMinimo);
     }
 
     private void AplicarCaixa(Conta conta, SalvarContaDto dados, List<Conta> todas)
@@ -290,7 +294,11 @@ public sealed class ContaServico(
                 conta.ContaCaixaId,
                 this.Contas.FirstOrDefault(c => c.Id == conta.ContaCaixaId)?.Nome,
                 conta.Favorita,
-                conta.Encerrada);
+                conta.Encerrada,
+                conta.NumeroConta,
+                conta.Abreviacao,
+                conta.Comentario,
+                conta.SaldoMinimo);
         }
     }
 }

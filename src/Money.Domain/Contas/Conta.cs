@@ -9,6 +9,15 @@ namespace Money.Domain.Contas;
 /// <summary>Conta do usuário: bancária, cartão, investimento, bem ou dívida, numa moeda.</summary>
 public sealed class Conta : EntidadeNomeada
 {
+    /// <summary>Tamanho máximo do número da conta.</summary>
+    public const int TamanhoMaximoNumero = 50;
+
+    /// <summary>Tamanho máximo da abreviação.</summary>
+    public const int TamanhoMaximoAbreviacao = 20;
+
+    /// <summary>Tamanho máximo do comentário.</summary>
+    public const int TamanhoMaximoComentario = 1000;
+
     /// <summary>Inicia uma nova instância da classe <see cref="Conta"/>, aberta e sem vínculos.</summary>
     /// <param name="tipo">Tipo da conta; não muda depois.</param>
     /// <param name="nome">Nome da conta.</param>
@@ -58,6 +67,18 @@ public sealed class Conta : EntidadeNomeada
 
     /// <summary>Obtém um valor que indica se a conta está encerrada.</summary>
     public bool Encerrada { get; private set; }
+
+    /// <summary>Obtém o número da conta, como agência e conta ou o final do cartão, se informado.</summary>
+    public string? NumeroConta { get; private set; }
+
+    /// <summary>Obtém o nome curto da conta, se informado.</summary>
+    public string? Abreviacao { get; private set; }
+
+    /// <summary>Obtém o comentário livre da conta, se informado.</summary>
+    public string? Comentario { get; private set; }
+
+    /// <summary>Obtém o saldo mínimo, na moeda da conta, se informado.</summary>
+    public decimal? SaldoMinimo { get; private set; }
 
     /// <summary>
     /// Define moeda e saldo inicial juntos, para que o saldo seja validado nas casas da nova moeda.
@@ -133,6 +154,37 @@ public sealed class Conta : EntidadeNomeada
         this.ContaCaixaId = null;
     }
 
+    /// <summary>Define os dados complementares; texto vazio ou só com espaços fica sem valor.</summary>
+    /// <param name="numeroConta">Número da conta.</param>
+    /// <param name="abreviacao">Nome curto da conta.</param>
+    /// <param name="comentario">Comentário livre.</param>
+    public void DefinirComplementos(string? numeroConta, string? abreviacao, string? comentario)
+    {
+        var numero = TextoOpcional(numeroConta, TamanhoMaximoNumero, "O número da conta");
+        var curto = TextoOpcional(abreviacao, TamanhoMaximoAbreviacao, "A abreviação");
+        var texto = TextoOpcional(comentario, TamanhoMaximoComentario, "O comentário");
+        this.NumeroConta = numero;
+        this.Abreviacao = curto;
+        this.Comentario = texto;
+    }
+
+    /// <summary>Define o saldo mínimo, validado nas casas decimais da moeda atual da conta.</summary>
+    /// <param name="saldoMinimo">Valor com sinal, ou nulo para nenhum.</param>
+    public void DefinirSaldoMinimo(decimal? saldoMinimo)
+    {
+        if (saldoMinimo is decimal valor)
+        {
+            if (!this.Tipo.TemSaldoMinimo())
+            {
+                throw new RegraNegocioException("Este tipo de conta não tem saldo mínimo.");
+            }
+
+            this.ValidarCasasDecimais(valor);
+        }
+
+        this.SaldoMinimo = saldoMinimo;
+    }
+
     /// <summary>Marca ou desmarca a conta como favorita.</summary>
     /// <param name="favorita">Novo estado.</param>
     public void DefinirFavorita(bool favorita)
@@ -169,6 +221,22 @@ public sealed class Conta : EntidadeNomeada
         this.Encerrada = false;
     }
 
+    private static string? TextoOpcional(string? valor, int tamanhoMaximo, string rotulo)
+    {
+        var limpo = valor?.Trim();
+        if (string.IsNullOrEmpty(limpo))
+        {
+            return null;
+        }
+
+        if (limpo.Length > tamanhoMaximo)
+        {
+            throw new RegraNegocioException($"{rotulo} deve ter no máximo {tamanhoMaximo} caracteres.");
+        }
+
+        return limpo;
+    }
+
     private void DefinirSaldoInicial(decimal saldoInformado)
     {
         if (this.Tipo == TipoConta.Investimento && saldoInformado != 0)
@@ -181,13 +249,17 @@ public sealed class Conta : EntidadeNomeada
             throw new RegraNegocioException("O valor de um ativo não pode ser negativo.");
         }
 
+        this.ValidarCasasDecimais(saldoInformado);
+        this.SaldoInicial = this.Tipo.RepresentaDivida() ? -saldoInformado : saldoInformado;
+    }
+
+    private void ValidarCasasDecimais(decimal valor)
+    {
         var moeda = CatalogoMoedas.Obter(this.CodigoMoeda);
-        if (decimal.Round(saldoInformado, moeda.CasasDecimais) != saldoInformado)
+        if (decimal.Round(valor, moeda.CasasDecimais) != valor)
         {
             throw new RegraNegocioException(
                 $"O valor admite no máximo {moeda.CasasDecimais} casas decimais em {moeda.Nome}.");
         }
-
-        this.SaldoInicial = this.Tipo.RepresentaDivida() ? -saldoInformado : saldoInformado;
     }
 }

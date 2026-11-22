@@ -93,6 +93,36 @@ public sealed class ContasPersistenciaTestes : IAsyncLifetime, IDisposable
         });
     }
 
+    /// <summary>Número, abreviação, comentário e saldo mínimo voltam iguais; conta sem eles volta com nulos.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task Gravar_ContaComComplementos_LeIgual()
+    {
+        var completa = new Conta(TipoConta.Corrente, "Banco", "BRL", 0m);
+        completa.DefinirComplementos("1234-5", "Bco", "Conta do salário");
+        completa.DefinirSaldoMinimo(-500.25m);
+        var vazia = new Conta(TipoConta.Dinheiro, "Carteira", "BRL", 0m);
+        await this.GravarAsync(null, completa, vazia);
+
+        await this.ExecutarAsync(async s =>
+        {
+            var contas = s.GetRequiredService<IRepositorio<Conta>>();
+            var lida = await contas.ObterPorIdAsync(completa.Id, CancellationToken.None);
+            Assert.NotNull(lida);
+            Assert.Equal("1234-5", lida.NumeroConta);
+            Assert.Equal("Bco", lida.Abreviacao);
+            Assert.Equal("Conta do salário", lida.Comentario);
+            Assert.Equal(-500.25m, lida.SaldoMinimo);
+
+            var semComplementos = await contas.ObterPorIdAsync(vazia.Id, CancellationToken.None);
+            Assert.NotNull(semComplementos);
+            Assert.Null(semComplementos.NumeroConta);
+            Assert.Null(semComplementos.Abreviacao);
+            Assert.Null(semComplementos.Comentario);
+            Assert.Null(semComplementos.SaldoMinimo);
+        });
+    }
+
     /// <summary>Excluir o grupo no banco deixa a conta sem grupo.</summary>
     /// <returns>Tarefa do teste.</returns>
     [Fact]

@@ -14,6 +14,7 @@ export interface TipoContaInfo {
   tipo: TipoConta;
   nome: string;
   descricao: string;
+  temSaldoMinimo: boolean;
 }
 
 export interface Conta {
@@ -32,6 +33,10 @@ export interface Conta {
   nomeContaCaixa: string | null;
   favorita: boolean;
   encerrada: boolean;
+  numeroConta: string | null;
+  abreviacao: string | null;
+  comentario: string | null;
+  saldoMinimo: number | null;
 }
 
 export interface TotalMoeda {
@@ -68,6 +73,10 @@ export interface SalvarConta {
   contaCaixaId: string | null;
   nomeCaixaNova: string | null;
   saldoCaixaNova: number;
+  numeroConta: string | null;
+  abreviacao: string | null;
+  comentario: string | null;
+  saldoMinimo: number | null;
 }
 
 export type TipoLancamento = 'Gasto' | 'Recebimento' | 'TransferenciaSaida' | 'TransferenciaEntrada';
