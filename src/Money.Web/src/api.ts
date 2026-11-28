@@ -15,6 +15,7 @@ export interface TipoContaInfo {
   nome: string;
   descricao: string;
   temSaldoMinimo: boolean;
+  pedeNumeroNaCriacao: boolean;
 }
 
 export interface Conta {
@@ -179,6 +180,8 @@ export const api = {
   conta: (id: string) => chamar<Conta>('GET', `/contas/${id}`),
   opcoes: () => chamar<OpcoesConta>('GET', '/contas/opcoes'),
   caixas: (moeda: string) => chamar<Conta[]>('GET', `/contas/caixas?moeda=${moeda}`),
+  /** Confere se o nome pode ser usado numa conta nova; lança `ErroRegra` com o motivo se não puder. */
+  conferirNomeConta: (nome: string) => chamar<void>('GET', `/contas/nome-disponivel?nome=${encodeURIComponent(nome)}`),
   criarConta: (dados: SalvarConta) => chamar<Conta>('POST', '/contas', dados),
   atualizarConta: (id: string, dados: SalvarConta) => chamar<Conta>('PUT', `/contas/${id}`, dados),
   definirFavorita: (id: string, favorita: boolean) => chamar<void>('PUT', `/contas/${id}/favorita`, { favorita }),

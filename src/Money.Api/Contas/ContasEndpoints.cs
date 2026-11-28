@@ -24,6 +24,8 @@ internal static class ContasEndpoints
             new OpcoesContaDto(servico.ListarTipos(), servico.ListarMoedas()));
         contas.MapGet("/caixas", (string moeda, ContaServico servico, CancellationToken ct) =>
             servico.ListarCaixasCompativeisAsync(moeda, ct));
+        contas.MapGet("/nome-disponivel", (string? nome, ContaServico servico, CancellationToken ct) =>
+            servico.ConferirNomeAsync(nome, ct));
         contas.MapGet("/{id:guid}", (Guid id, ContaServico servico, CancellationToken ct) =>
             servico.ObterAsync(id, ct));
         contas.MapPost("/", (SalvarContaDto dados, ContaServico servico, CancellationToken ct) =>

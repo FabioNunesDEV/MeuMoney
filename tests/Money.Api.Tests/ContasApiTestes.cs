@@ -4,6 +4,7 @@
 
 using System.Net;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Money.Api.Comum;
 using Money.Domain.Contas;
 using Money.Services.Contas;
@@ -55,6 +56,45 @@ public sealed class ContasApiTestes : TesteDeApi
         Assert.Equal(HttpStatusCode.BadRequest, resposta.StatusCode);
         var erro = await resposta.Content.ReadFromJsonAsync<ErroDto>(Json);
         Assert.Contains("Já existe", erro?.Mensagem);
+    }
+
+    /// <summary>A conferência do nome aceita nome livre e devolve 400 com a mensagem para nome já usado.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task NomeDisponivel_LivreERepetido_AceitaERecusa()
+    {
+        (await this.Cliente.PostAsJsonAsync("/api/contas", Dados("Conta principal"), Json)).EnsureSuccessStatusCode();
+
+        var livre = await this.Cliente.GetAsync("/api/contas/nome-disponivel?nome=Conta%20reserva");
+        var repetido = await this.Cliente.GetAsync("/api/contas/nome-disponivel?nome=conta%20principal");
+
+        Assert.True(livre.IsSuccessStatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, repetido.StatusCode);
+        Assert.Equal(
+            "Já existe uma conta com o nome 'conta principal'.",
+            (await repetido.Content.ReadFromJsonAsync<ErroDto>(Json))?.Mensagem);
+    }
+
+    /// <summary>
+    /// As opções dizem que só a corrente pede número na criação e que a Dinheiro não tem saldo mínimo;
+    /// saldo mínimo enviado para conta Dinheiro volta como 400.
+    /// </summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task Opcoes_CapacidadesPorTipo_EDinheiroSemSaldoMinimo()
+    {
+        using var opcoes = JsonDocument.Parse(await this.Cliente.GetStringAsync("/api/contas/opcoes"));
+        var tipos = opcoes.RootElement.GetProperty("tipos").EnumerateArray()
+            .ToDictionary(t => t.GetProperty("tipo").GetString() ?? string.Empty);
+
+        Assert.True(tipos["Corrente"].GetProperty("pedeNumeroNaCriacao").GetBoolean());
+        Assert.False(tipos["Dinheiro"].GetProperty("pedeNumeroNaCriacao").GetBoolean());
+        Assert.False(tipos["Dinheiro"].GetProperty("temSaldoMinimo").GetBoolean());
+
+        var dinheiro = new SalvarContaDto { Tipo = TipoConta.Dinheiro, Nome = "Carteira", SaldoMinimo = 10m };
+        var recusa = await this.Cliente.PostAsJsonAsync("/api/contas", dinheiro, Json);
+        Assert.Equal(HttpStatusCode.BadRequest, recusa.StatusCode);
+        Assert.Equal("Este tipo de conta não tem saldo mínimo.", (await recusa.Content.ReadFromJsonAsync<ErroDto>(Json))?.Mensagem);
     }
 
     /// <summary>Favoritar e encerrar pela API mudam o que o gerenciador devolve; excluir conta não existe.</summary>

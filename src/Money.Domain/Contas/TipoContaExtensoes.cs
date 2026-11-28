@@ -23,11 +23,24 @@ public static class TipoContaExtensoes
         return tipo is TipoConta.Corrente or TipoConta.Poupanca or TipoConta.Dinheiro;
     }
 
-    /// <summary>Indica se o tipo tem saldo mínimo no cadastro.</summary>
+    /// <summary>
+    /// Indica se o tipo tem saldo mínimo no cadastro. Dinheiro não tem: ou o dinheiro existe ou não existe.
+    /// </summary>
     /// <param name="tipo">Tipo da conta.</param>
-    /// <returns><see langword="true"/> para Corrente, Poupança e Dinheiro.</returns>
+    /// <returns><see langword="true"/> para Corrente e Poupança.</returns>
     public static bool TemSaldoMinimo(this TipoConta tipo)
     {
-        return tipo is TipoConta.Corrente or TipoConta.Poupanca or TipoConta.Dinheiro;
+        return tipo is TipoConta.Corrente or TipoConta.Poupanca;
+    }
+
+    /// <summary>
+    /// Indica se o assistente de nova conta pergunta o número da conta. Nos Detalhes o número é
+    /// editável em todos os tipos.
+    /// </summary>
+    /// <param name="tipo">Tipo da conta.</param>
+    /// <returns><see langword="true"/> para Corrente.</returns>
+    public static bool PedeNumeroNaCriacao(this TipoConta tipo)
+    {
+        return tipo is TipoConta.Corrente;
     }
 }

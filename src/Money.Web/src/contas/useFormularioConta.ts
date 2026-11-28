@@ -79,6 +79,8 @@ export function useFormularioConta(original: Conta | null) {
     // Saldo mínimo vazio é "sem saldo mínimo", não zero; em tipo sem saldo mínimo, nunca vai.
     const textoMinimo = infoTipo?.temSaldoMinimo ? saldoMinimo.trim() : '';
     const valorMinimo = textoMinimo === '' ? null : lerValor(textoMinimo);
+    // Na conta nova, o número só vai se o tipo o pergunta: o digitado antes de trocar o tipo é descartado.
+    const numero = original || infoTipo?.pedeNumeroNaCriacao ? numeroConta : '';
     if (valorSaldo === null || valorCaixa === null || (textoMinimo !== '' && valorMinimo === null)) {
       setErro('Valor inválido. Use o formato 1.234,56.');
       return null;
@@ -96,7 +98,7 @@ export function useFormularioConta(original: Conta | null) {
       contaCaixaId: caixaId || null,
       nomeCaixaNova: nomeCaixa || null,
       saldoCaixaNova: valorCaixa,
-      numeroConta: numeroConta || null,
+      numeroConta: numero || null,
       abreviacao: abreviacao || null,
       comentario: comentario || null,
       saldoMinimo: valorMinimo,

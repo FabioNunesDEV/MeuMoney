@@ -20,30 +20,39 @@ async function abrirConta(janela: Page, nome: string) {
 const detalhes = (janela: Page) => janela.getByRole('form', { name: 'Detalhes da conta' });
 
 test('Editar leva aos Detalhes, que gravam os campos complementares', async ({ janela }) => {
-  await criarConta(janela, { tipo: 'Dinheiro', nome: 'Carteira', saldoInformado: 100 });
-  await abrirConta(janela, 'Carteira');
+  await criarConta(janela, { tipo: 'Corrente', nome: 'Banco', saldoInformado: 100 });
+  await abrirConta(janela, 'Banco');
 
-  // A faixa de título vem antes da Movimentação, que também tem um Editar na barra dela.
   await janela.getByRole('toolbar').first().getByRole('button', { name: 'Editar' }).click();
   const form = detalhes(janela);
   await expect(form.getByLabel('Nome', { exact: true })).toBeFocused();
   await expect(form.getByRole('button', { name: 'Salvar' })).toBeDisabled();
 
   await form.getByLabel('Número da conta').fill('1234-5');
-  await form.getByLabel('Abreviação').fill('Cart');
+  await form.getByLabel('Abreviação').fill('Bco');
   await form.getByLabel('Saldo mínimo').fill('50,00');
   await form.getByLabel('Comentário').fill('Uso diário');
   await form.getByRole('button', { name: 'Salvar' }).click();
 
-  await expect(janela.getByText('"Carteira" foi alterada.')).toBeVisible();
+  await expect(janela.getByText('"Banco" foi alterada.')).toBeVisible();
   await expect(form.getByRole('button', { name: 'Salvar' })).toBeDisabled();
 
-  await janela.getByRole('button', { name: 'Movimentação', exact: true }).click();
-  await janela.getByRole('button', { name: 'Detalhes', exact: true }).click();
+  // Reabrir a conta lê de novo o que foi gravado.
+  await abrirConta(janela, 'Banco');
   await expect(form.getByLabel('Número da conta')).toHaveValue('1234-5');
-  await expect(form.getByLabel('Abreviação')).toHaveValue('Cart');
+  await expect(form.getByLabel('Abreviação')).toHaveValue('Bco');
   await expect(form.getByLabel('Saldo mínimo')).toHaveValue('50,00');
   await expect(form.getByLabel('Comentário')).toHaveValue('Uso diário');
+});
+
+test('Detalhes da conta Dinheiro não têm saldo mínimo', async ({ janela }) => {
+  await criarConta(janela, { tipo: 'Dinheiro', nome: 'Carteira', saldoInformado: 100 });
+  await abrirConta(janela, 'Carteira');
+
+  await janela.getByRole('button', { name: 'Detalhes', exact: true }).click();
+  const form = detalhes(janela);
+  await expect(form.getByLabel('Número da conta')).toBeVisible();
+  await expect(form.getByLabel('Saldo mínimo')).toHaveCount(0);
 });
 
 test('Detalhes mostram a recusa no formulário e Desfazer volta ao gravado', async ({ janela }) => {

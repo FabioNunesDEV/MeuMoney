@@ -349,13 +349,60 @@ public class ContaServicoTestes
         Assert.Equal("A moeda não muda depois do primeiro lançamento da conta.", erro.Message);
     }
 
-    /// <summary>Só corrente, poupança e dinheiro informam que têm saldo mínimo.</summary>
+    /// <summary>Só corrente e poupança informam que têm saldo mínimo.</summary>
     [Fact]
     public void ListarTipos_InformaQuemTemSaldoMinimo()
     {
         var comSaldoMinimo = this.Servico.ListarTipos().Where(t => t.TemSaldoMinimo).Select(t => t.Tipo);
 
-        Assert.Equal([TipoConta.Corrente, TipoConta.Poupanca, TipoConta.Dinheiro], comSaldoMinimo);
+        Assert.Equal([TipoConta.Corrente, TipoConta.Poupanca], comSaldoMinimo);
+    }
+
+    /// <summary>Só a corrente informa que pede o número da conta na criação.</summary>
+    [Fact]
+    public void ListarTipos_InformaQuemPedeNumeroNaCriacao()
+    {
+        var pedemNumero = this.Servico.ListarTipos().Where(t => t.PedeNumeroNaCriacao).Select(t => t.Tipo);
+
+        Assert.Equal([TipoConta.Corrente], pedemNumero);
+    }
+
+    /// <summary>Nome livre é aceito na conferência, sem gravar nada.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task ConferirNomeAsync_NomeLivre_Aceita()
+    {
+        await this.Servico.CriarAsync(Dados("Conta principal"), CancellationToken.None);
+
+        await this.Servico.ConferirNomeAsync("Conta reserva", CancellationToken.None);
+
+        Assert.Equal(1, this.unidade.Gravacoes);
+    }
+
+    /// <summary>Nome de conta já existente, mesmo encerrada e com outra caixa, é recusado.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task ConferirNomeAsync_NomeDeContaEncerrada_LancaRegraNegocio()
+    {
+        var encerrada = new Conta(TipoConta.Corrente, "Conta principal", "BRL", 0m);
+        encerrada.Encerrar();
+        this.contas.Adicionar(encerrada);
+
+        var erro = await Assert.ThrowsAsync<RegraNegocioException>(
+            () => this.Servico.ConferirNomeAsync(" conta principal ", CancellationToken.None));
+
+        Assert.Equal("Já existe uma conta com o nome 'conta principal'.", erro.Message);
+    }
+
+    /// <summary>Nome vazio é recusado com a mensagem de nome obrigatório.</summary>
+    /// <returns>Tarefa do teste.</returns>
+    [Fact]
+    public async Task ConferirNomeAsync_NomeVazio_LancaRegraNegocio()
+    {
+        var erro = await Assert.ThrowsAsync<RegraNegocioException>(
+            () => this.Servico.ConferirNomeAsync("  ", CancellationToken.None));
+
+        Assert.Equal("O nome é obrigatório.", erro.Message);
     }
 
     /// <summary>Criar e alterar gravam número, abreviação, comentário e saldo mínimo.</summary>
@@ -364,16 +411,16 @@ public class ContaServicoTestes
     public async Task CriarEAtualizarAsync_Complementos_GravaEDevolve()
     {
         var criada = await this.Servico.CriarAsync(
-            Dados("Carteira", TipoConta.Dinheiro) with { NumeroConta = " 1234-5 ", Abreviacao = "Cart", SaldoMinimo = 50m },
+            Dados("Banco", TipoConta.Corrente) with { NumeroConta = " 1234-5 ", Abreviacao = "Bco", SaldoMinimo = 50m },
             CancellationToken.None);
 
         var alterada = await this.Servico.AtualizarAsync(
             criada.Id,
-            Dados("Carteira", TipoConta.Dinheiro) with { Comentario = "Uso diário", SaldoMinimo = -10.5m },
+            Dados("Banco", TipoConta.Corrente) with { Comentario = "Uso diário", SaldoMinimo = -10.5m },
             CancellationToken.None);
 
         Assert.Equal("1234-5", criada.NumeroConta);
-        Assert.Equal("Cart", criada.Abreviacao);
+        Assert.Equal("Bco", criada.Abreviacao);
         Assert.Equal(50m, criada.SaldoMinimo);
         Assert.Null(alterada.NumeroConta);
         Assert.Null(alterada.Abreviacao);
@@ -386,25 +433,28 @@ public class ContaServicoTestes
     [Fact]
     public async Task AtualizarAsync_TrocaMoedaComSaldoMinimoIncompativel_LancaRegraNegocio()
     {
-        var criada = await this.Servico.CriarAsync(Dados("Carteira", TipoConta.Dinheiro) with { SaldoMinimo = 10.5m }, CancellationToken.None);
+        var criada = await this.Servico.CriarAsync(Dados("Banco", TipoConta.Corrente) with { SaldoMinimo = 10.5m }, CancellationToken.None);
 
         var erro = await Assert.ThrowsAsync<RegraNegocioException>(
             () => this.Servico.AtualizarAsync(
                 criada.Id,
-                Dados("Carteira", TipoConta.Dinheiro, "JPY") with { SaldoMinimo = 10.5m },
+                Dados("Banco", TipoConta.Corrente, "JPY") with { SaldoMinimo = 10.5m },
                 CancellationToken.None));
 
         Assert.Equal("O valor admite no máximo 0 casas decimais em Iene japonês.", erro.Message);
         Assert.Equal(1, this.unidade.Gravacoes);
     }
 
-    /// <summary>Saldo mínimo em tipo que não o tem é recusado.</summary>
+    /// <summary>Saldo mínimo em tipo que não o tem (cartão e dinheiro, entre outros) é recusado.</summary>
+    /// <param name="tipo">Tipo sem saldo mínimo.</param>
     /// <returns>Tarefa do teste.</returns>
-    [Fact]
-    public async Task CriarAsync_SaldoMinimoEmCartao_LancaRegraNegocio()
+    [Theory]
+    [InlineData(TipoConta.CartaoCredito)]
+    [InlineData(TipoConta.Dinheiro)]
+    public async Task CriarAsync_SaldoMinimoEmTipoSemSaldoMinimo_LancaRegraNegocio(TipoConta tipo)
     {
         var erro = await Assert.ThrowsAsync<RegraNegocioException>(
-            () => this.Servico.CriarAsync(Dados("Cartão", TipoConta.CartaoCredito) with { SaldoMinimo = 100m }, CancellationToken.None));
+            () => this.Servico.CriarAsync(Dados("Conta", tipo) with { SaldoMinimo = 100m }, CancellationToken.None));
 
         Assert.Equal("Este tipo de conta não tem saldo mínimo.", erro.Message);
         Assert.Empty(this.contas.Itens);

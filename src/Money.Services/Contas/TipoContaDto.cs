@@ -14,4 +14,7 @@ public sealed record TipoContaDto(TipoConta Tipo, string Nome, string Descricao)
 {
     /// <summary>Obtém um valor que indica se o tipo tem saldo mínimo, para a tela mostrar o campo.</summary>
     public bool TemSaldoMinimo => this.Tipo.TemSaldoMinimo();
+
+    /// <summary>Obtém um valor que indica se o assistente de nova conta pergunta o número da conta.</summary>
+    public bool PedeNumeroNaCriacao => this.Tipo.PedeNumeroNaCriacao();
 }
