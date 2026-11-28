@@ -84,6 +84,19 @@ public sealed class ContaServico(
             .ToList();
     }
 
+    /// <summary>
+    /// Confere, antes de criar a conta, se o nome pode ser usado: as mesmas regras de nome da criação,
+    /// contando as contas encerradas.
+    /// </summary>
+    /// <param name="nome">Nome pretendido.</param>
+    /// <param name="cancellationToken">Cancela a consulta.</param>
+    /// <returns>Tarefa concluída se o nome for aceito; recusa com <see cref="RegraNegocioException"/>.</returns>
+    public async Task ConferirNomeAsync(string? nome, CancellationToken cancellationToken)
+    {
+        var limpo = EntidadeNomeada.ValidarNome(nome);
+        Nomes.GarantirUnico(await contas.ListarAsync(cancellationToken), limpo, null, "uma conta");
+    }
+
     /// <summary>Cria uma conta e, se pedido, a conta caixa do investimento.</summary>
     /// <param name="dados">Dados do formulário.</param>
     /// <param name="cancellationToken">Cancela a gravação.</param>

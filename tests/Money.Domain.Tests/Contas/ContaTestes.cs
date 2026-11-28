@@ -269,11 +269,14 @@ public class ContaTestes
         Assert.Equal(-500m, conta.SaldoMinimo);
     }
 
-    /// <summary>Tipo sem saldo mínimo recusa valor, mas aceita nulo.</summary>
-    [Fact]
-    public void DefinirSaldoMinimo_CartaoCredito_LancaRegraNegocio()
+    /// <summary>Tipo sem saldo mínimo (cartão e dinheiro, entre outros) recusa valor, mas aceita nulo.</summary>
+    /// <param name="tipo">Tipo sem saldo mínimo.</param>
+    [Theory]
+    [InlineData(TipoConta.CartaoCredito)]
+    [InlineData(TipoConta.Dinheiro)]
+    public void DefinirSaldoMinimo_TipoSemSaldoMinimo_LancaRegraNegocio(TipoConta tipo)
     {
-        var conta = new Conta(TipoConta.CartaoCredito, "Cartão", "BRL", 0m);
+        var conta = new Conta(tipo, "Conta", "BRL", 0m);
 
         var erro = Assert.Throws<RegraNegocioException>(() => conta.DefinirSaldoMinimo(50m));
         conta.DefinirSaldoMinimo(null);
@@ -286,7 +289,7 @@ public class ContaTestes
     [Fact]
     public void DefinirSaldoMinimo_CasasDemais_LancaRegraNegocio()
     {
-        var conta = new Conta(TipoConta.Dinheiro, "Carteira", "BRL", 0m);
+        var conta = new Conta(TipoConta.Corrente, "Banco", "BRL", 0m);
 
         var erro = Assert.Throws<RegraNegocioException>(() => conta.DefinirSaldoMinimo(10.005m));
 

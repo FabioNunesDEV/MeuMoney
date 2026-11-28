@@ -26,14 +26,10 @@ public abstract class EntidadeNomeada : Entidade
     /// <summary>Obtém o nome, sem espaços nas pontas.</summary>
     public string Nome { get; private set; }
 
-    /// <summary>Troca o nome.</summary>
-    /// <param name="nome">Novo nome.</param>
-    public void Renomear(string nome)
-    {
-        this.Nome = ValidarNome(nome);
-    }
-
-    private static string ValidarNome(string? nome)
+    /// <summary>Valida o nome com as regras de toda entidade nomeada.</summary>
+    /// <param name="nome">Nome informado pelo usuário.</param>
+    /// <returns>O nome sem os espaços das pontas.</returns>
+    public static string ValidarNome(string? nome)
     {
         var limpo = nome?.Trim() ?? string.Empty;
         if (limpo.Length == 0)
@@ -47,5 +43,12 @@ public abstract class EntidadeNomeada : Entidade
         }
 
         return limpo;
+    }
+
+    /// <summary>Troca o nome.</summary>
+    /// <param name="nome">Novo nome.</param>
+    public void Renomear(string nome)
+    {
+        this.Nome = ValidarNome(nome);
     }
 }

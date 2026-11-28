@@ -141,28 +141,44 @@ export function CamposNome({ f, focar }: PropsCampos) {
   );
 }
 
+/** Número da conta, opcional: nos campos complementares e no passo próprio do assistente. */
+export function CampoNumeroConta({ f, focar }: PropsCampos) {
+  return (
+    <Campo rotulo="Número da conta">
+      <input className={estiloEntrada} value={f.numeroConta} autoFocus={focar} onChange={(e) => f.setNumeroConta(e.target.value)} />
+    </Campo>
+  );
+}
+
+/** Saldo mínimo, opcional; só aparece nos tipos que o têm. */
+export function CampoSaldoMinimo({ f }: PropsCampos) {
+  if (!f.infoTipo?.temSaldoMinimo) {
+    return null;
+  }
+
+  return (
+    <Campo rotulo="Saldo mínimo">
+      <input
+        className={classes(estiloEntrada, 'text-right tabular-nums')}
+        inputMode="decimal"
+        value={f.saldoMinimo}
+        placeholder="Sem saldo mínimo"
+        onChange={(e) => f.setSaldoMinimo(e.target.value)}
+      />
+    </Campo>
+  );
+}
+
 /** Dados complementares, todos opcionais: número, abreviação, saldo mínimo (nos tipos que o têm) e comentário. */
 export function CamposComplementares({ f }: PropsCampos) {
   return (
     <div className="grid gap-3">
       <div className="grid grid-cols-2 gap-3">
-        <Campo rotulo="Número da conta">
-          <input className={estiloEntrada} value={f.numeroConta} onChange={(e) => f.setNumeroConta(e.target.value)} />
-        </Campo>
+        <CampoNumeroConta f={f} />
         <Campo rotulo="Abreviação">
           <input className={estiloEntrada} value={f.abreviacao} onChange={(e) => f.setAbreviacao(e.target.value)} />
         </Campo>
-        {f.infoTipo?.temSaldoMinimo && (
-          <Campo rotulo="Saldo mínimo">
-            <input
-              className={classes(estiloEntrada, 'text-right tabular-nums')}
-              inputMode="decimal"
-              value={f.saldoMinimo}
-              placeholder="Sem saldo mínimo"
-              onChange={(e) => f.setSaldoMinimo(e.target.value)}
-            />
-          </Campo>
-        )}
+        <CampoSaldoMinimo f={f} />
       </div>
       <Campo rotulo="Comentário">
         <textarea
